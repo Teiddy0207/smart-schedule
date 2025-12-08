@@ -1,8 +1,21 @@
+// import 'package:flutter/material.dart';
+// import 'screens/todo_list_screen.dart';
+
+// void main() {
+//   runApp(const MaterialApp(
+//     debugShowCheckedModeBanner: false,
+//     home: TodoListScreen(),
+//   ));
+// }
+
+
+
+
 import 'package:flutter/material.dart';
-import 'core/api_client.dart';
-import 'services/auth_service.dart';
-import 'repositories/auth_repository.dart';
+import 'package:provider/provider.dart';
+import 'providers/auth_provider.dart';
 import 'screens/login_screen.dart';
+import 'screens/dashboard_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -13,21 +26,21 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Initialize API client and services
-    final apiClient = ApiClient();
-    final authService = AuthService(apiClient);
-    final authRepository = AuthRepository(authService);
-
-    return MaterialApp(
-      title: 'Smart schedule',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF7C3AED),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+      ],
+      child: MaterialApp(
+        title: 'Smart Meet',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFF6B5CE6),
+          ),
+          useMaterial3: true,
         ),
-        useMaterial3: true,
+        home: const LoginScreen(),
       ),
-      home: LoginScreen(authRepository: authRepository),
     );
   }
 }

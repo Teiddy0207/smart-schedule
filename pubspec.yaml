@@ -43,6 +43,12 @@ dependencies:
   
   # Shared preferences for local storage
   shared_preferences: ^2.2.2
+  
+  # State management
+  provider: ^6.1.1
+  
+  # Date utilities
+  intl: ^0.19.0
 
 dev_dependencies:
   flutter_test:
