@@ -3,6 +3,7 @@ import '../screens/dashboard_screen.dart';
 import '../screens/calendar_screen.dart';
 import '../screens/group_screen.dart';
 import '../screens/profile_screen.dart';
+import '../screens/create_event_screen.dart';
 
 class NavigationHelper {
   // Map các màn hình tương ứng với index
@@ -15,9 +16,12 @@ class NavigationHelper {
 
   // Navigate đến màn hình tương ứng với index
   static void navigateToScreen(BuildContext context, int index, int currentIndex) {
-    // Index 2 là "Thêm mới" - không navigate, chỉ mở dialog
+    // Index 2 là "Thêm mới" - mở màn hình tạo sự kiện
     if (index == 2) {
-      _showAddDialog(context);
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const CreateEventScreen()),
+      );
       return;
     }
 
@@ -34,23 +38,6 @@ class NavigationHelper {
         MaterialPageRoute(builder: (_) => screen),
       );
     }
-  }
-
-  // Hiển thị dialog "Thêm mới"
-  static void _showAddDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Thêm mới'),
-        content: const Text('Chức năng thêm mới sẽ được triển khai sau.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Đóng'),
-          ),
-        ],
-      ),
-    );
   }
 }
 
