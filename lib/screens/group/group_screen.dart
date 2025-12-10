@@ -18,7 +18,18 @@ class GroupScreen extends StatelessWidget {
     return BaseScreen(
       initialBottomNavIndex: 3,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF7C3AED),
+        flexibleSpace: Container( //update lại màu tím
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF9C88FF), // tím nhạt
+                Color(0xFF7C3AED), // tím đậm
+              ],
+            ),
+          ),
+        ),
         elevation: 0,
         leading: Padding(
           padding: const EdgeInsets.all(8.0),
@@ -106,7 +117,14 @@ class GroupScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF7C3AED),
+        gradient: const LinearGradient( // update lại màu tím
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF9C88FF), // tím nhạt
+            Color(0xFF7C3AED), // tím đậm
+          ],
+        ),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(

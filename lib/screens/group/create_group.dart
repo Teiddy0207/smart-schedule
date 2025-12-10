@@ -64,7 +64,18 @@ class _CreateGroupState extends State<CreateGroup> {
     return BaseScreen(
       initialBottomNavIndex: 3,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF7C3AED), // Màu tím
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF9C88FF), // tím nhạt
+                Color(0xFF7C3AED), // tím đậm
+              ],
+            ),
+          ),
+        ),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -257,7 +268,14 @@ class _CreateGroupState extends State<CreateGroup> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF7C3AED), // Màu tím
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF9C88FF), // tím nhạt
+            Color(0xFF7C3AED), // tím đậm
+          ],
+        ),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../screens/dashboard_screen.dart';
 import '../screens/calendar_screen.dart';
 import '../screens/group/group_screen.dart';
-import '../screens/profile_screen.dart';
+import '../screens/personal_screen.dart';
 import '../screens/create_event_screen.dart';
 
 class NavigationHelper {
@@ -12,7 +12,7 @@ class NavigationHelper {
     1: () => const CalendarScreen(),
     2: () => const CreateEventScreen(), // Thêm mới sự kiện
     3: () => const GroupScreen(),
-    4: () => const ProfileScreen(),
+    4: () => const PersonalScreen(),
   };
 
   // Navigate đến màn hình tương ứng với index
