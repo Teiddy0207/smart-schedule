@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../screens/dashboard_screen.dart';
 import '../screens/calendar_screen.dart';
-import '../screens/group_screen.dart';
+import '../screens/group/group_screen.dart';
 import '../screens/profile_screen.dart';
 
 class NavigationHelper {
