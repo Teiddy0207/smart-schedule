@@ -120,7 +120,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                   children: [
                     _buildFormCard(),
                     const SizedBox(height: 16),
-                    const SizedBox(height: 16),
                     _buildFooterButtons(),
                   ],
                 ),
@@ -140,7 +139,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -319,7 +318,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -349,7 +348,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
               activeColor: const Color(0xFF7C3AED),
               contentPadding: EdgeInsets.zero,
             );
-          }).toList(),
+          }),
         ],
       ),
     );
@@ -399,17 +398,17 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     if (_formKey.currentState!.validate()) {
       // TODO: Implement add event logic
       // Save event data
-      final eventData = {
-        'title': _titleController.text,
-        'location': _locationController.text,
-        'duration': _selectedDuration,
-        'priority': _selectedPriority,
-        'group': _groupController.text,
-        'person': _personController.text,
-        'url': _urlController.text,
-        'notes': _notesController.text,
-        'timeOptions': _timeOptions,
-      };
+      // final eventData = {
+      //   'title': _titleController.text,
+      //   'location': _locationController.text,
+      //   'duration': _selectedDuration,
+      //   'priority': _selectedPriority,
+      //   'group': _groupController.text,
+      //   'person': _personController.text,
+      //   'url': _urlController.text,
+      //   'notes': _notesController.text,
+      //   'timeOptions': _timeOptions,
+      // };
 
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
