@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'base_screen.dart';
+import '../base_screen.dart';
+import 'dashboard_month.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -80,7 +81,28 @@ class DashboardScreen extends StatelessWidget {
                 children: [
                   InkWell(
                     borderRadius: BorderRadius.circular(12),
-                    onTap: () {},
+                    onTap: () {
+                      // Sử dụng PageRouteBuilder để có hiệu ứng chuyển mượt mà hơn
+                      Navigator.of(context).pushReplacement(
+                        PageRouteBuilder(
+                          transitionDuration: const Duration(milliseconds: 450),
+                          pageBuilder: (context, animation, secondaryAnimation) => const MainDashboardMonth(),
+                          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                            const begin = Offset(-1.0, 0.0);
+                            const end = Offset.zero;
+                            const curve = Curves.easeInOut;
+
+                            final tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                            final offsetAnimation = animation.drive(tween);
+
+                            return SlideTransition(
+                              position: offsetAnimation,
+                              child: child,
+                            );
+                          },
+                        ),
+                      );
+                    },
                     child: const Icon(Icons.chevron_left, color: Color(0xFF6B5CE6), size: 32),
                   ),
                   const SizedBox(width: 6),
@@ -146,7 +168,6 @@ class DashboardScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                  // Có thể thêm nhiều lịch khác...
                 ],
               ),
             ),
