@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_app/screens/dashboard/dashboard_year.dart';
 
 import '../base_screen.dart';
 
@@ -82,7 +83,25 @@ class MainDashboardMonth extends StatelessWidget {
                   InkWell(
                     borderRadius: BorderRadius.circular(12),
                     onTap: () {
-                      // Sử dụng PageRouteBuilder để có hiệu ứng chuyển mượt mà hơn
+                      Navigator.of(context).pushReplacement(
+                        PageRouteBuilder(
+                          transitionDuration: const Duration(milliseconds: 450),
+                          pageBuilder: (context, animation, secondaryAnimation) => const MainDashboardYear(),
+                          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                            const begin = Offset(-1.0, 0.0);
+                            const end = Offset.zero;
+                            const curve = Curves.easeInOut;
+
+                            final tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                            final offsetAnimation = animation.drive(tween);
+
+                            return SlideTransition(
+                              position: offsetAnimation,
+                              child: child,
+                            );
+                          },
+                        ),
+                      );
                     },
                     child: const Icon(Icons.chevron_left, color: Color(0xFF6B5CE6), size: 32),
                   ),
@@ -168,8 +187,6 @@ class MainDashboardMonth extends StatelessWidget {
     );
   }
 }
-
-// Tăng chiều dài label cho đẹp hơn, + dùng màu gradient text
 class _CalendarDayLabel extends StatelessWidget {
   final String label;
   const _CalendarDayLabel(this.label);
