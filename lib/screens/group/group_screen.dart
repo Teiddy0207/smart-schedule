@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import '../base_screen.dart';
 import 'create_group.dart';
+import 'list_user_of_group.dart';
 
 class GroupScreen extends StatelessWidget {
   const GroupScreen({super.key});
 
   // Fake data - danh sách nhóm
   final List<Map<String, dynamic>> _groups = const [
-    {'name': 'Service Part', 'members': 10},
-    {'name': 'Cloud Part', 'members': 8},
-    {'name': 'AI Part', 'members': 12},
-    {'name': 'Trà đá SDS', 'members': 5},
+    {'name': 'Service Part', 'members': 10, 'id': 'service-part'},
+    {'name': 'Cloud Part', 'members': 8, 'id': 'cloud-part'},
+    {'name': 'AI Part', 'members': 12, 'id': 'ai-part'},
+    {'name': 'Trà đá SDS', 'members': 5, 'id': 'tra-da-sds'},
   ];
 
   @override
@@ -101,8 +102,10 @@ class GroupScreen extends StatelessWidget {
         itemBuilder: (context, index) {
           final group = _groups[index];
           return _buildGroupCard(
+            context: context,
             name: group['name'] as String,
             memberCount: group['members'] as int,
+            groupId: group['id'] as String,
           );
         },
       ),
@@ -110,77 +113,93 @@ class GroupScreen extends StatelessWidget {
   }
 
   Widget _buildGroupCard({
+    required BuildContext context,
     required String name,
     required int memberCount,
+    required String groupId,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient( // update lại màu tím
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF9C88FF), // tím nhạt
-            Color(0xFF7C3AED), // tím đậm
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ListUserOfGroup(
+              groupName: name,
+              groupId: groupId,
+            ),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient( // update lại màu tím
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF9C88FF), // tím nhạt
+              Color(0xFF7C3AED), // tím đậm
+            ],
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            // Icon nhóm
+            Container(
+              width: 48,
+              height: 48,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.group,
+                color: Color(0xFF7C3AED),
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            
+            // Thông tin nhóm
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Thành viên: $memberCount',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Icon menu
+            IconButton(
+              icon: const Icon(
+                Icons.menu,
+                color: Colors.white,
+              ),
+              onPressed: () {
+                // TODO: Implement menu
+              },
+            ),
           ],
         ),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          // Icon nhóm
-          Container(
-            width: 48,
-            height: 48,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.group,
-              color: Color(0xFF7C3AED),
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 16),
-          
-          // Thông tin nhóm
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Thành viên: $memberCount',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          // Icon menu
-          IconButton(
-            icon: const Icon(
-              Icons.menu,
-              color: Colors.white,
-            ),
-            onPressed: () {
-              // TODO: Implement menu
-            },
-          ),
-        ],
       ),
     );
   }
