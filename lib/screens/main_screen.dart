@@ -4,6 +4,7 @@ import 'group/group_screen_content.dart';
 import 'group/create_group.dart';
 import 'profile/profile_screen_content.dart';
 import 'event/create_event_screen.dart';
+import 'calendar/calendar_screen_content.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -22,16 +23,11 @@ class _MainScreenState extends State<MainScreen> {
       child: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Color(0xFF7E6DF7),
-              Color(0xFF6B5CE6),
-            ],
+            colors: [Color(0xFF7E6DF7), Color(0xFF6B5CE6)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.vertical(
-            bottom: Radius.circular(24),
-          ),
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
         ),
         child: SafeArea(
           child: Padding(
@@ -44,7 +40,11 @@ class _MainScreenState extends State<MainScreen> {
                     color: Colors.white24,
                     borderRadius: BorderRadius.circular(50),
                   ),
-                  child: const Icon(Icons.calendar_today, color: Colors.white, size: 26),
+                  child: const Icon(
+                    Icons.calendar_today,
+                    color: Colors.white,
+                    size: 26,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 const Text(
@@ -67,7 +67,10 @@ class _MainScreenState extends State<MainScreen> {
                 CircleAvatar(
                   backgroundColor: Colors.white24,
                   child: IconButton(
-                    icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+                    icon: const Icon(
+                      Icons.notifications_outlined,
+                      color: Colors.white,
+                    ),
                     onPressed: () {},
                   ),
                 ),
@@ -83,10 +86,7 @@ class _MainScreenState extends State<MainScreen> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF9C88FF),
-              Color(0xFF7C3AED),
-            ],
+            colors: [Color(0xFF9C88FF), Color(0xFF7C3AED)],
           ),
         ),
       ),
@@ -121,11 +121,7 @@ class _MainScreenState extends State<MainScreen> {
               shape: BoxShape.circle,
             ),
             padding: const EdgeInsets.all(8),
-            child: const Icon(
-              Icons.search,
-              color: Color(0xFF7C3AED),
-              size: 20,
-            ),
+            child: const Icon(Icons.search, color: Color(0xFF7C3AED), size: 20),
           ),
           onPressed: () {},
         ),
@@ -137,11 +133,7 @@ class _MainScreenState extends State<MainScreen> {
                 shape: BoxShape.circle,
               ),
               padding: const EdgeInsets.all(8),
-              child: const Icon(
-                Icons.add,
-                color: Color(0xFF7C3AED),
-                size: 20,
-              ),
+              child: const Icon(Icons.add, color: Color(0xFF7C3AED), size: 20),
             ),
             onPressed: () {
               Navigator.push(
@@ -154,6 +146,60 @@ class _MainScreenState extends State<MainScreen> {
       ],
     ),
     null, // Profile không có AppBar
+    AppBar(
+      flexibleSpace: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF9C88FF),
+              Color(0xFF7C3AED),
+            ],
+          ),
+        ),
+      ),
+      elevation: 0,
+      leading: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.calendar_today,
+            color: Color(0xFF7C3AED),
+            size: 20,
+          ),
+        ),
+      ),
+      title: const Text(
+        'Lịch',
+        style: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          fontSize: 18,
+        ),
+      ),
+      actions: [
+        IconButton(
+          icon: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            padding: const EdgeInsets.all(8),
+            child: const Icon(
+              Icons.today,
+              color: Color(0xFF7C3AED),
+              size: 20,
+            ),
+          ),
+          onPressed: () {},
+        ),
+      ],
+    ), // Calendar AppBar
   ];
 
   // Danh sách các body tương ứng với bottom nav bar
@@ -162,6 +208,7 @@ class _MainScreenState extends State<MainScreen> {
     DashboardScreenContent(),
     GroupScreenContent(),
     ProfileScreenContent(),
+    CalendarScreenContent(),
   ];
 
   @override
@@ -169,10 +216,7 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: _appBars[_currentIndex],
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
@@ -190,17 +234,12 @@ class _MainScreenState extends State<MainScreen> {
         iconSize: 24,
         elevation: 8,
         items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Trang chủ'),
+          BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Nhóm'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Cá nhân'),
           BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Trang chủ',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.group),
-            label: 'Nhóm',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Cá nhân',
+            icon: Icon(Icons.calendar_today),
+            label: 'Lịch',
           ),
         ],
       ),
@@ -208,9 +247,7 @@ class _MainScreenState extends State<MainScreen> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => const CreateEventScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => const CreateEventScreen()),
           );
         },
         backgroundColor: const Color(0xFF7C3AED),
