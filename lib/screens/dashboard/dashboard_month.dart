@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/screens/dashboard/dashboard_year.dart';
-
-import '../base_screen.dart';
+import 'dashboard_year.dart';
 
 class MainDashboardMonth extends StatelessWidget {
   const MainDashboardMonth({Key? key}) : super(key: key);
@@ -10,8 +8,8 @@ class MainDashboardMonth extends StatelessWidget {
     final double calendarBaseHeight = 320.0;
     final double calendarHeight = calendarBaseHeight * 1.2;
 
-    return BaseScreen(
-      initialBottomNavIndex: 0,
+    return Scaffold(
+      backgroundColor: Colors.white,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(110),
         child: Container(
@@ -85,20 +83,15 @@ class MainDashboardMonth extends StatelessWidget {
                     onTap: () {
                       Navigator.of(context).pushReplacement(
                         PageRouteBuilder(
-                          transitionDuration: const Duration(milliseconds: 450),
+                          transitionDuration: const Duration(milliseconds: 300),
                           pageBuilder: (context, animation, secondaryAnimation) => const MainDashboardYear(),
                           transitionsBuilder: (context, animation, secondaryAnimation, child) {
                             const begin = Offset(-1.0, 0.0);
                             const end = Offset.zero;
                             const curve = Curves.easeInOut;
-
                             final tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
                             final offsetAnimation = animation.drive(tween);
-
-                            return SlideTransition(
-                              position: offsetAnimation,
-                              child: child,
-                            );
+                            return SlideTransition(position: offsetAnimation, child: child);
                           },
                         ),
                       );

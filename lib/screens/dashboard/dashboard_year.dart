@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../base_screen.dart';
 import 'dashboard_month.dart';
 
 class MainDashboardYear extends StatelessWidget {
@@ -23,8 +22,8 @@ class MainDashboardYear extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BaseScreen(
-      initialBottomNavIndex: 0,
+    return Scaffold(
+      backgroundColor: Colors.white,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(110),
         child: Container(

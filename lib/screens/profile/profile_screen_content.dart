@@ -1,26 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
-import 'base_screen.dart';
-import 'login_screen.dart';
+import '../../providers/auth_provider.dart';
+import '../login/login_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+class ProfileScreenContent extends StatelessWidget {
+  const ProfileScreenContent({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BaseScreen(
-      initialBottomNavIndex: 4, // Tab "Cá nhân" được chọn
-      body: Consumer<AuthProvider>(
+    return Consumer<AuthProvider>(
         builder: (context, authProvider, child) {
           return SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header với gradient tím
                 _buildHeader(authProvider),
-                
-                // Thống kê
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
@@ -59,8 +53,6 @@ class ProfileScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                
-                // Lịch đã liên kết
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Column(
@@ -79,8 +71,6 @@ class ProfileScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                
-                // Thông tin
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
@@ -101,7 +91,6 @@ class ProfileScreen extends StatelessWidget {
                       const SizedBox(height: 12),
                       _buildInfoRow('Số điện thoại', '0977038592'),
                       const SizedBox(height: 24),
-                      // Nút Đăng xuất
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
@@ -138,13 +127,11 @@ class ProfileScreen extends StatelessWidget {
             ),
           );
         },
-      ),
     );
   }
 
   Widget _buildHeader(AuthProvider authProvider) {
     final username = authProvider.currentUser?.username ?? 'Người dùng';
-    final email = authProvider.currentUser?.email ?? '';
     
     return Container(
       height: 200,
@@ -153,14 +140,13 @@ class ProfileScreen extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFF9C88FF), // tím nhạt
-            Color(0xFF7C3AED), // tím đậm
+            Color(0xFF9C88FF),
+            Color(0xFF7C3AED),
           ],
         ),
       ),
       child: Stack(
         children: [
-          // Card tím nhạt ở giữa
           Positioned(
             left: 16,
             right: 16,
@@ -173,7 +159,6 @@ class ProfileScreen extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  // Avatar
                   Container(
                     width: 60,
                     height: 60,
@@ -199,7 +184,6 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  // Tên
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -222,7 +206,6 @@ class ProfileScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                  // Icon edit
                   Container(
                     width: 32,
                     height: 32,
@@ -240,7 +223,6 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
           ),
-          // Tiêu đề "Information User"
           const Positioned(
             top: 45,
             left: 16,
@@ -318,7 +300,6 @@ class ProfileScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Google logo
           Container(
             width: 40,
             height: 40,
@@ -338,7 +319,6 @@ class ProfileScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          // Thông tin
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -362,7 +342,6 @@ class ProfileScreen extends StatelessWidget {
               ],
             ),
           ),
-          // Icon checkmark
           Container(
             width: 32,
             height: 32,
@@ -411,3 +390,4 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 }
+
