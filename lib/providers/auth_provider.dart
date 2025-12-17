@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/auth/login_request.dart';
 import '../models/auth/login_response.dart';
+import '../services/google_auth_service.dart';
 
 class AuthProvider with ChangeNotifier {
   bool _isLoading = false;
@@ -77,13 +78,52 @@ class AuthProvider with ChangeNotifier {
   }
 
   // Logout method
-  void logout() {
+  Future<void> logout() async {
+    // Sign out khỏi Google để lần sau có thể chọn tài khoản khác
+    await GoogleAuthService.signOut();
+    
     _isAuthenticated = false;
     _currentUser = null;
     _token = null;
     _refreshToken = null;
     _errorMessage = null;
     notifyListeners();
+  }
+
+  // Google login method
+  Future<bool> loginWithGoogle() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final googleResponse = await GoogleAuthService.loginWithGoogle();
+
+      // Convert GoogleLoginResponse to LoginResponse format
+      _isLoading = false;
+      _isAuthenticated = true;
+      _token = googleResponse.data.accessToken;
+      _refreshToken = googleResponse.data.refreshToken;
+      
+      // Lấy thông tin user từ Google account (đã được thêm vào response)
+      // TODO: Có thể gọi API để lấy thông tin từ bảng social_logins (provider_username, provider_user_email)
+      _currentUser = User(
+        id: 'google_user_${googleResponse.data.email ?? ''}',
+        username: googleResponse.data.displayName ?? googleResponse.data.email ?? 'google_user',
+        email: googleResponse.data.email,
+        fullName: googleResponse.data.displayName,
+      );
+      
+      _errorMessage = null;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _isAuthenticated = false;
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
   }
 
   // Clear error
