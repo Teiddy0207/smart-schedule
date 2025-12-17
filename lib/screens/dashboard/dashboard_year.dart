@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'dashboard_month.dart';
 
 class MainDashboardYear extends StatelessWidget {
@@ -24,149 +23,221 @@ class MainDashboardYear extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(110),
-        child: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+      appBar: _buildAppBar(),
+      body: Column(
+        children: [
+          // Header:  2025 và nút refresh
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
+            child: Row(
+              children: [
+                const Text(
+                  '2025',
+                  style: TextStyle(
+                    color: Color(0xFF6B5CE6),
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color:  Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFF6B5CE6), width: 2),
+                  ),
+                  child:  IconButton(
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.refresh, color: Color(0xFF6B5CE6), size: 20),
+                    onPressed: () {},
+                  ),
+                ),
+              ],
             ),
-            borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
           ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white24,
-                      borderRadius: BorderRadius.circular(50),
-                    ),
-                    child: const Icon(Icons.calendar_today, color: Colors.white, size: 24),
-                  ),
-                  const SizedBox(width: 12),
-                  const Text(
-                    'Airbender',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const Spacer(),
-                  CircleAvatar(
-                    backgroundColor: Colors.white24,
-                    child: IconButton(
-                      icon: const Icon(Icons.search, color: Colors.white),
-                      onPressed: () {},
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  CircleAvatar(
-                    backgroundColor: Colors.white24,
-                    child: IconButton(
-                      icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-                      onPressed: () {},
-                    ),
-                  ),
-                ],
+
+          // Month Grid
+          Expanded(
+            child:  Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+              child: GridView.builder(
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: monthLabels.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  mainAxisSpacing: 16,
+                  crossAxisSpacing: 16,
+                  childAspectRatio: 1.0,
+                ),
+                itemBuilder: (context, index) {
+                  final label = monthLabels[index];
+                  final isActive = index == 3; // Tháng 4
+
+                  return _MonthCard(
+                    label: label,
+                    active: isActive,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        PageRouteBuilder(
+                          transitionDuration: const Duration(milliseconds: 350),
+                          pageBuilder: (context, animation, secondaryAnimation) =>
+                          const MainDashboardMonth(),
+                          transitionsBuilder:  (context, animation, secondaryAnimation, child) {
+                            final curvedAnimation = CurvedAnimation(
+                              parent: animation,
+                              curve:  Curves.easeOutCubic,
+                            );
+                            return FadeTransition(
+                              opacity: curvedAnimation,
+                              child: child,
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: _buildBottomNavBar(),
+      floatingActionButton: _buildFAB(context),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar() {
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(110),
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF7E6DF7), Color(0xFF6B5CE6)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+            child: Row(
+              children:  [
+                Container(
+                  padding: const EdgeInsets.all(13),
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                  child: const Icon(Icons.calendar_today, color: Colors.white, size: 26),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Airbender',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 26,
+                    fontWeight: FontWeight. bold,
+                  ),
+                ),
+                const Spacer(),
+                CircleAvatar(
+                  backgroundColor: Colors.white24,
+                  child: IconButton(
+                    icon: const Icon(Icons.search, color: Colors.white),
+                    onPressed: () {},
+                  ),
+                ),
+                const SizedBox(width: 10),
+                CircleAvatar(
+                  backgroundColor: Colors.white24,
+                  child: IconButton(
+                    icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+                    onPressed: () {},
+                  ),
+                ),
+              ],
             ),
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 24),
-        child: Column(
-          children: [
-            const SizedBox(height: 16),
-            // Year title
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18),
-              child: Row(
-                children: const [
-                  Text(
-                    '2025',
-                    style: TextStyle(
-                      color: Color(0xFF6366F1),
-                      fontSize: 28,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  Spacer(),
-                  // optional action
-                  Icon(Icons.filter_list, color: Colors.white54),
-                ],
-              ),
-            ),
-            const SizedBox(height: 18),
+    );
+  }
 
-            // Month grid
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18),
-              child: LayoutBuilder(builder: (context, constraints) {
-                // Calculate crossAxisCount to look good on different widths.
-                final width = constraints.maxWidth;
-                final crossAxisCount = width > 420 ? 4 : 3;
-                return GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: monthLabels.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    mainAxisSpacing: 14,
-                    crossAxisSpacing: 14,
-                    childAspectRatio: 97 / 80,
-                  ),
-                  itemBuilder: (context, index) {
-                    final label = monthLabels[index];
-                    final isActive = index == 3; // Tháng 4 is active in the original design
-
-                    return _MonthCard(
-                      label: label,
-                      active: isActive,
-                      onTap: () {
-                        if (isActive) {
-                          // Navigate to month view (slide transition)
-                          Navigator.of(context).push(
-                            PageRouteBuilder(
-                              transitionDuration: const Duration(milliseconds: 450),
-                              pageBuilder: (context, animation, secondaryAnimation) =>
-                              const MainDashboardMonth(),
-                              transitionsBuilder:
-                                  (context, animation, secondaryAnimation, child) {
-                                const begin = Offset(1.0, 0.0);
-                                const end = Offset.zero;
-                                const curve = Curves.easeInOut;
-                                final tween = Tween(begin: begin, end: end)
-                                    .chain(CurveTween(curve: curve));
-                                final offsetAnimation = animation.drive(tween);
-                                return SlideTransition(
-                                  position: offsetAnimation,
-                                  child: child,
-                                );
-                              },
-                            ),
-                          );
-                        } else {
-                          // simple feedback for non-active months (could be expanded)
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Mở $label (chưa có nội dung)')),
-                          );
-                        }
-                      },
-                    );
-                  },
-                );
-              }),
-            ),
-            const SizedBox(height: 24),
-          ],
+  Widget _buildBottomNavBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color:  Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child:  Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children:  [
+              _buildNavItem(icon: Icons.home, label: 'Trang chủ', isSelected: true),
+              _buildNavItem(icon: Icons.calendar_today, label: 'Lịch', isSelected: false),
+              const SizedBox(width: 56), // Space for FAB
+              _buildNavItem(icon: Icons.group, label: 'Nhóm', isSelected: false),
+              _buildNavItem(icon: Icons. person, label: 'Cá nhân', isSelected: false),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem({
+    required IconData icon,
+    required String label,
+    required bool isSelected,
+  }) {
+    final color = isSelected ? const Color(0xFF7C3AED) : Colors.grey[600];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color:  color,
+              fontSize: 10,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFAB(BuildContext context) {
+    return Container(
+      height: 56,
+      width:  56,
+      margin: const EdgeInsets.only(top: 30),
+      child: FloatingActionButton(
+        onPressed: () {
+          // Navigate to create event
+        },
+        backgroundColor: const Color(0xFF7C3AED),
+        elevation: 4,
+        shape: const CircleBorder(),
+        child: const Icon(Icons. add, color: Colors.white, size: 28),
       ),
     );
   }
@@ -186,21 +257,21 @@ class _MonthCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final background = active ? const Color(0xFF6366F1) : const Color(0xFFE3E4F7);
+    final background = active ? const Color(0xFF7C3AED) : const Color(0xFFE8E8F4);
     final textColor = active ? Colors.white : const Color(0xFF1E293B);
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        decoration: ShapeDecoration(
+        decoration: BoxDecoration(
           color: background,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          shadows: active
-              ? const [
+          borderRadius: BorderRadius.circular(16),
+          boxShadow:  active
+              ? [
             BoxShadow(
-              color: Color(0x293666F1),
-              blurRadius: 12,
-              offset: Offset(0, 4),
+              color: const Color(0xFF7C3AED).withOpacity(0.3),
+              blurRadius:  12,
+              offset: const Offset(0, 4),
             )
           ]
               : null,
@@ -208,11 +279,10 @@ class _MonthCard extends StatelessWidget {
         child: Center(
           child: Text(
             label,
-            textAlign: TextAlign.center,
+            textAlign:  TextAlign.center,
             style: TextStyle(
-              color: textColor,
-              fontSize: 18,
-              fontFamily: 'Lexend',
+              color:  textColor,
+              fontSize: 17,
               fontWeight: FontWeight.w600,
             ),
           ),
