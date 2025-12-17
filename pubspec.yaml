@@ -49,6 +49,12 @@ dependencies:
   
   # Date utilities
   intl: ^0.19.0
+  
+  # Google Sign In
+  google_sign_in: ^6.2.1
+  
+  # HTTP client (for GoogleAuthService)
+  http: ^1.2.0
 
 dev_dependencies:
   flutter_test:

@@ -53,6 +53,44 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _handleGoogleLogin() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final success = await authProvider.loginWithGoogle();
+
+    if (mounted) {
+      if (success) {
+        // Navigate to main screen after successful login
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MainScreen()),
+        );
+      } else {
+        // Show error message in dialog for better readability
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text(
+              'Lỗi đăng nhập Google',
+              style: TextStyle(color: Colors.red),
+            ),
+            content: SingleChildScrollView(
+              child: Text(
+                authProvider.errorMessage ?? 'Đăng nhập Google thất bại',
+                style: const TextStyle(fontSize: 14),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Đóng'),
+              ),
+            ],
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -363,9 +401,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         color: Color(0xFF4285F4),
                       ),
                     ),
-                    onPressed: () {
-                      // TODO: Implement Google login
-                    },
+                    onPressed: () => _handleGoogleLogin(),
                   ),
                 ),
                 const SizedBox(width: 12),
