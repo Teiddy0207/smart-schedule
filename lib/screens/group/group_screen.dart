@@ -17,83 +17,65 @@ class GroupScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BaseScreen(
       initialBottomNavIndex: 3,
-      appBar: AppBar(
-        flexibleSpace: Container( //update lại màu tím
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(110),
+        child: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
+              colors: [
+                Color(0xFF7E6DF7),
+                Color(0xFF6B5CE6),
+              ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF9C88FF), // tím nhạt
-                Color(0xFF7C3AED), // tím đậm
-              ],
+            ),
+            borderRadius: BorderRadius.vertical(
+              bottom: Radius.circular(24),
+            ),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(13),
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(50),
+                    ),
+                    child: const Icon(Icons.calendar_today, color: Colors.white, size: 26),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Nhóm của bạn',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  CircleAvatar(
+                    backgroundColor: Colors.white24,
+                    child: IconButton(
+                      icon: const Icon(Icons.search, color: Colors.white),
+                      onPressed: () {},
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  CircleAvatar(
+                    backgroundColor: Colors.white24,
+                    child: IconButton(
+                      icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+                      onPressed: () {},
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-        elevation: 0,
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.event_available,
-              color: Color(0xFF7C3AED),
-              size: 20,
-            ),
-          ),
-        ),
-        title: const Text(
-          'Nhóm của bạn',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-              padding: const EdgeInsets.all(8),
-              child: const Icon(
-                Icons.search,
-                color: Color(0xFF7C3AED),
-                size: 20,
-              ),
-            ),
-            onPressed: () {
-              // TODO: Implement search
-            },
-          ),
-          IconButton(
-            icon: Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-              padding: const EdgeInsets.all(8),
-              child: const Icon(
-                Icons.add,
-                color: Color(0xFF7C3AED),
-                size: 20,
-              ),
-            ),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const CreateGroup(),
-                ),
-              );
-            },
-          ),
-        ],
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(16),
@@ -121,8 +103,8 @@ class GroupScreen extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFF9C88FF), // tím nhạt
-            Color(0xFF7C3AED), // tím đậm
+            Color(0xFF6B5CE6), // tím nhạt
+            Color(0xFF6B5CE6), // tím đậm
           ],
         ),
         borderRadius: BorderRadius.circular(12),
@@ -139,7 +121,7 @@ class GroupScreen extends StatelessWidget {
             ),
             child: const Icon(
               Icons.group,
-              color: Color(0xFF7C3AED),
+              color: Color(0xFF6B5CE6),
               size: 24,
             ),
           ),

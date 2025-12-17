@@ -1,21 +1,28 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/screens/dashboard/dashboard_year.dart';
-
 import '../base_screen.dart';
+import 'dashboard_screen.dart';
+import 'dashboard_year.dart';
 
-class MainDashboardMonth extends StatelessWidget {
-  const MainDashboardMonth({Key? key}) : super(key: key);
+class MainDashboardMonth extends StatefulWidget {
+  const MainDashboardMonth({super.key});
+
+  @override
+  State<MainDashboardMonth> createState() => _MainDashboardMonthState();
+}
+
+class _MainDashboardMonthState extends State<MainDashboardMonth> {
+  int selectedDay = 29;
+  int currentMonth = 4;
+  int currentYear = 2025;
+
   @override
   Widget build(BuildContext context) {
-    final double calendarBaseHeight = 320.0;
-    final double calendarHeight = calendarBaseHeight * 1.2;
-
     return BaseScreen(
       initialBottomNavIndex: 0,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(110),
         child: Container(
-          decoration: const BoxDecoration(
+          decoration:  const BoxDecoration(
             gradient: LinearGradient(
               colors: [
                 Color(0xFF7E6DF7),
@@ -30,8 +37,8 @@ class MainDashboardMonth extends StatelessWidget {
           ),
           child: SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-              child: Row(
+              padding: const EdgeInsets. symmetric(horizontal: 18, vertical: 16),
+              child:  Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(13),
@@ -45,9 +52,9 @@ class MainDashboardMonth extends StatelessWidget {
                   const Text(
                     'Airbender',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Colors. white,
                       fontSize: 26,
-                      fontWeight: FontWeight.bold,
+                      fontWeight:  FontWeight.bold,
                     ),
                   ),
                   const Spacer(),
@@ -72,29 +79,32 @@ class MainDashboardMonth extends StatelessWidget {
           ),
         ),
       ),
-      body: SingleChildScrollView(
+      body: Container(
+        color: const Color(0xFFF5F5F7),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // "Tháng 4" label and avatars
+            // Header:  Tháng và nút refresh
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
+              padding: const EdgeInsets.fromLTRB(16, 22, 16, 16),
               child: Row(
                 children: [
+                  // Nút Back - quay về MainDashboardYear
                   InkWell(
                     borderRadius: BorderRadius.circular(12),
-                    onTap: () {
+                    onTap:  () {
                       Navigator.of(context).pushReplacement(
                         PageRouteBuilder(
                           transitionDuration: const Duration(milliseconds: 450),
-                          pageBuilder: (context, animation, secondaryAnimation) => const MainDashboardYear(),
-                          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                            const begin = Offset(-1.0, 0.0);
-                            const end = Offset.zero;
+                          pageBuilder: (context, animation, secondaryAnimation) =>
+                          const MainDashboardYear(),
+                          transitionsBuilder:  (context, animation, secondaryAnimation, child) {
+                            const begin = Offset(-1.0, 0.0); // Slide từ trái sang
+                            const end = Offset. zero;
                             const curve = Curves.easeInOut;
-
-                            final tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                            final tween = Tween(begin: begin, end: end)
+                                .chain(CurveTween(curve: curve));
                             final offsetAnimation = animation.drive(tween);
-
                             return SlideTransition(
                               position: offsetAnimation,
                               child: child,
@@ -105,112 +115,211 @@ class MainDashboardMonth extends StatelessWidget {
                     },
                     child: const Icon(Icons.chevron_left, color: Color(0xFF6B5CE6), size: 32),
                   ),
-                  const SizedBox(width: 10),
-                  const Text(
-                    'Tháng 4',
-                    style: TextStyle(
-                      color: Color(0xFF6366F1),
-                      fontSize: 26,
-                      fontFamily: 'Inter',
+                  const SizedBox(width:  6),
+                  Text(
+                    'Tháng $currentMonth',
+                    style:  const TextStyle(
+                      color: Color(0xFF6B5CE6),
                       fontWeight: FontWeight.w700,
+                      fontSize: 22,
                     ),
                   ),
                   const Spacer(),
-                  const Spacer(),
-                  CircleAvatar(
-                    backgroundColor: Colors.white,
-                    radius: 20,
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFF6B5CE6), width: 2),
+                    ),
                     child: IconButton(
                       icon: const Icon(Icons.refresh, color: Color(0xFF6B5CE6)),
-                      onPressed: () {},
+                      onPressed: () {
+                        setState(() {
+                          currentMonth = 4;
+                          currentYear = 2025;
+                          selectedDay = 29;
+                        });
+                      },
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
 
-            // Calendar box
-            Padding(
-              padding: const EdgeInsets.fromLTRB(19, 24, 19, 0),
-              child: Container(
-                width: double.infinity,
-                height: calendarHeight,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(
-                    width: 1,
-                    color: Colors.black.withOpacity(0.14),
+            // Calendar Card - Expanded để kéo dài
+            Expanded(
+              child: Padding(
+                padding:  const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.blue.withOpacity(0.08),
-                      blurRadius: 14,
-                      offset: Offset(0, 4),
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    // Day labels
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: const [
-                          _CalendarDayLabel('T2'),
-                          _CalendarDayLabel('T3'),
-                          _CalendarDayLabel('T4'),
-                          _CalendarDayLabel('T5'),
-                          _CalendarDayLabel('T6'),
-                          _CalendarDayLabel('T7'),
-                          _CalendarDayLabel('CN'),
-                        ],
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      // Header ngày trong tuần
+                      _buildWeekDayHeader(),
+                      const SizedBox(height: 16),
+                      // Các ngày trong tháng - Expanded
+                      Expanded(
+                        child: _buildCalendarDays(),
                       ),
-                    ),
-                    // Calendar grid area, Expanded để dãn đều trong container cao hơn
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: _CalendarGrid(),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 60),
           ],
         ),
       ),
     );
   }
-}
-class _CalendarDayLabel extends StatelessWidget {
-  final String label;
-  const _CalendarDayLabel(this.label);
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildWeekDayHeader() {
+    final List<String> weekDays = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+    return Row(
+      mainAxisAlignment: MainAxisAlignment. spaceAround,
+      children:  weekDays.map((day) {
+        return Expanded(
+          child: Text(
+            day,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.black87,
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildCalendarDays() {
+    int daysInMonth = _getDaysInMonth(currentYear, currentMonth);
+    int firstWeekday = _getFirstWeekdayOfMonth(currentYear, currentMonth);
+
+    int prevMonthDays = _getDaysInMonth(
+      currentMonth == 1 ? currentYear - 1 : currentYear,
+      currentMonth == 1 ?  12 : currentMonth - 1,
+    );
+
+    List<int? > days = [];
+
+    int daysFromPrevMonth = (firstWeekday - 1) % 7;
+    for (int i = daysFromPrevMonth; i > 0; i--) {
+      days.add(-(prevMonthDays - i + 1));
+    }
+
+    for (int i = 1; i <= daysInMonth; i++) {
+      days.add(i);
+    }
+
+    int remainingDays = 7 - (days.length % 7);
+    if (remainingDays < 7) {
+      for (int i = 1; i <= remainingDays; i++) {
+        days.add(-100 - i);
+      }
+    }
+
+    // Tạo danh sách các tuần
+    List<List<int? >> weeks = [];
+    for (int i = 0; i < days.length; i += 7) {
+      weeks.add(days.sublist(i, i + 7 > days.length ? days.length :  i + 7));
+    }
+
+    return Column(
+      children: weeks.map((week) {
+        return Expanded(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: week.map((day) => _buildDayCell(day)).toList(),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildDayCell(int?  day) {
+    if (day == null) {
+      return const Expanded(child: SizedBox());
+    }
+
+    bool isSelected = day == selectedDay && day > 0;
+    bool isPrevMonth = day < 0 && day > -100;
+    bool isNextMonth = day < -100;
+
+    int displayDay = day;
+    if (isPrevMonth) {
+      displayDay = -day;
+    } else if (isNextMonth) {
+      displayDay = -(day + 100);
+    }
+
+    Color textColor;
+    if (isPrevMonth || isNextMonth) {
+      textColor = Colors.grey. shade300;
+    } else if (isSelected) {
+      textColor = Colors.white;
+    } else {
+      textColor = Colors. black87;
+    }
+
+    // Kích thước ô vuông cố định
+    const double squareSize = 44;
+
     return Expanded(
       child: Center(
-        child: SizedBox(
-          height: 44,
-          child: ShaderMask(
-            blendMode: BlendMode.srcIn,
-            shaderCallback: (bounds) => LinearGradient(
-              colors: [Color(0xFF7E6DF7), Color(0xFF6366F1)],
-            ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
+        child: GestureDetector(
+          onTap: () {
+            if (! isPrevMonth && !isNextMonth) {
+              setState(() {
+                selectedDay = day;
+              });
+              Navigator.of(context).pushReplacement(
+                PageRouteBuilder(
+                  transitionDuration: const Duration(milliseconds:  450),
+                  pageBuilder: (context, animation, secondaryAnimation) =>
+                  const DashboardScreen(),
+                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                    const begin = Offset(1.0, 0.0);
+                    const end = Offset.zero;
+                    const curve = Curves.easeInOut;
+                    final tween = Tween(begin: begin, end: end)
+                        .chain(CurveTween(curve: curve));
+                    final offsetAnimation = animation.drive(tween);
+                    return SlideTransition(
+                      position: offsetAnimation,
+                      child: child,
+                    );
+                  },
+                ),
+              );
+            }
+          },
+          child: Container(
+            width: squareSize,
+            height: squareSize,
+            decoration: BoxDecoration(
+              color: isSelected ? const Color(0xFF7C3AED) : Colors.transparent,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            alignment:  Alignment.center,
             child: Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 19,
-                fontFamily: 'Lexend',
-                fontWeight: FontWeight.w700,
-                height: 1.5,
-                letterSpacing: 0.2,
+              displayDay. toString(),
+              style: TextStyle(
+                color: textColor,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                fontSize: 17,
               ),
             ),
           ),
@@ -218,77 +327,12 @@ class _CalendarDayLabel extends StatelessWidget {
       ),
     );
   }
-}
 
-class _CalendarGrid extends StatelessWidget {
-  const _CalendarGrid({Key? key}) : super(key: key);
+  int _getDaysInMonth(int year, int month) {
+    return DateTime(year, month + 1, 0).day;
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    final List<List<String>> weeks = [
-      ['29', '30', '31', '1', '2', '3', '4'],
-      ['5', '6', '7', '8', '9', '10', '11'],
-      ['12', '13', '14', '15', '16', '17', '18'],
-      ['19', '20', '21', '22', '23', '24', '25'],
-      ['26', '27', '28', '29', '30', '1', '2'],
-    ];
-    final List<List<Color>> dayColors = [
-      [const Color(0x26001753), const Color(0x26001753), const Color(0x26001753),
-        Color(0xFF1E293B), Color(0xFF1E293B), Color(0xFF1E293B), Color(0xFF1E293B)],
-      [Color(0xFF1E293B), Color(0xFF1E293B), Color(0xFF1E293B),
-        Color(0xFF1E293B), Color(0xFF1E293B), Color(0xFF1E293B), Color(0xFF1E293B)],
-      [Color(0xFF1E293B), Color(0xFF1E293B), Color(0xFF1E293B),
-        Color(0xFF1E293B), Color(0xFF1E293B), Color(0xFF1E293B), Color(0xFF1E293B)],
-      [Color(0xFF1E293B), Color(0xFF1E293B), Color(0xFF1E293B),
-        Color(0xFF1E293B), Color(0xFF1E293B), Color(0xFF1E293B), Color(0xFF1E293B)],
-      [Color(0xFF1E293B), Color(0xFF1E293B), Color(0xFF1E293B), const Color(0xFF6366F1),
-        Color(0xFF1E293B), Color(0x261E293B), Color(0x261E293B)],
-    ];
-    return Column(
-      children: List.generate(weeks.length, (row) {
-        return Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 18), // spacing lớn hơn
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: List.generate(7, (col) {
-                final highlight = weeks[row][col] == '29' && row == 4;
-                return Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: highlight
-                        ? const Color(0xFF6366F1)
-                        : Colors.white,
-                    boxShadow: highlight
-                        ? [
-                      BoxShadow(
-                        color: Color(0x293666F1),
-                        blurRadius: 12,
-                        offset: Offset(0, 2),
-                      )
-                    ]
-                        : [],
-                  ),
-                  child: Center(
-                    child: Text(
-                      weeks[row][col],
-                      style: TextStyle(
-                        color: highlight
-                            ? Colors.white
-                            : dayColors[row][col],
-                        fontSize: 19,
-                        fontFamily: 'Lexend',
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                );
-              }),
-            ),
-          ),
-        );
-      }),
-    );
+  int _getFirstWeekdayOfMonth(int year, int month) {
+    return DateTime(year, month, 1).weekday;
   }
 }

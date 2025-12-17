@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../base_screen.dart';
 import 'dashboard_month.dart';
 
@@ -24,17 +23,17 @@ class MainDashboardYear extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BaseScreen(
-      initialBottomNavIndex: 0,
-      appBar: PreferredSize(
+      initialBottomNavIndex:  0,
+      appBar:  PreferredSize(
         preferredSize: const Size.fromHeight(110),
         child: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-              begin: Alignment.topLeft,
+              begin:  Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
+            borderRadius:  BorderRadius.vertical(bottom: Radius.circular(24)),
           ),
           child: SafeArea(
             child: Padding(
@@ -43,7 +42,7 @@ class MainDashboardYear extends StatelessWidget {
                 children: [
                   Container(
                     padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
+                    decoration:  BoxDecoration(
                       color: Colors.white24,
                       borderRadius: BorderRadius.circular(50),
                     ),
@@ -62,7 +61,7 @@ class MainDashboardYear extends StatelessWidget {
                   CircleAvatar(
                     backgroundColor: Colors.white24,
                     child: IconButton(
-                      icon: const Icon(Icons.search, color: Colors.white),
+                      icon: const Icon(Icons. search, color: Colors.white),
                       onPressed: () {},
                     ),
                   ),
@@ -80,17 +79,16 @@ class MainDashboardYear extends StatelessWidget {
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 24),
+      body: Container(
+        color: const Color(0xFFF5F5F7),
         child: Column(
           children: [
-            const SizedBox(height: 16),
-            // Year title
+            // Year title với nút refresh
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18),
+              padding: const EdgeInsets.fromLTRB(18, 20, 18, 20),
               child: Row(
-                children: const [
-                  Text(
+                children: [
+                  const Text(
                     '2025',
                     style: TextStyle(
                       color: Color(0xFF6366F1),
@@ -98,74 +96,74 @@ class MainDashboardYear extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  Spacer(),
-                  // optional action
-                  Icon(Icons.filter_list, color: Colors.white54),
+                  const Spacer(),
+                  // Nút refresh có viền
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFF6366F1), width: 2),
+                    ),
+                    child:  IconButton(
+                      padding:  EdgeInsets.zero,
+                      icon: const Icon(Icons. refresh, color: Color(0xFF6366F1), size: 20),
+                      onPressed:  () {},
+                    ),
+                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 18),
 
             // Month grid
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18),
-              child: LayoutBuilder(builder: (context, constraints) {
-                // Calculate crossAxisCount to look good on different widths.
-                final width = constraints.maxWidth;
-                final crossAxisCount = width > 420 ? 4 : 3;
-                return GridView.builder(
-                  shrinkWrap: true,
+            Expanded(
+              child:  Padding(
+                padding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
+                child: GridView.builder(
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: monthLabels.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
                     mainAxisSpacing: 14,
                     crossAxisSpacing: 14,
-                    childAspectRatio: 97 / 80,
+                    childAspectRatio: 1.05,
                   ),
-                  itemBuilder: (context, index) {
+                  itemBuilder:  (context, index) {
                     final label = monthLabels[index];
-                    final isActive = index == 3; // Tháng 4 is active in the original design
+                    final isActive = index == 3; // Tháng 4 is active
 
                     return _MonthCard(
                       label: label,
                       active: isActive,
                       onTap: () {
-                        if (isActive) {
-                          // Navigate to month view (slide transition)
-                          Navigator.of(context).push(
-                            PageRouteBuilder(
-                              transitionDuration: const Duration(milliseconds: 450),
-                              pageBuilder: (context, animation, secondaryAnimation) =>
-                              const MainDashboardMonth(),
-                              transitionsBuilder:
-                                  (context, animation, secondaryAnimation, child) {
-                                const begin = Offset(1.0, 0.0);
-                                const end = Offset.zero;
-                                const curve = Curves.easeInOut;
-                                final tween = Tween(begin: begin, end: end)
-                                    .chain(CurveTween(curve: curve));
-                                final offsetAnimation = animation.drive(tween);
-                                return SlideTransition(
-                                  position: offsetAnimation,
-                                  child: child,
-                                );
-                              },
-                            ),
-                          );
-                        } else {
-                          // simple feedback for non-active months (could be expanded)
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Mở $label (chưa có nội dung)')),
-                          );
-                        }
+                        // Navigate to month view - không truyền parameter
+                        Navigator. of(context).push(
+                          PageRouteBuilder(
+                            transitionDuration: const Duration(milliseconds: 450),
+                            pageBuilder: (context, animation, secondaryAnimation) =>
+                            const MainDashboardMonth(),
+                            transitionsBuilder:
+                                (context, animation, secondaryAnimation, child) {
+                              const begin = Offset(1.0, 0.0);
+                              const end = Offset.zero;
+                              const curve = Curves.easeInOut;
+                              final tween = Tween(begin: begin, end: end)
+                                  .chain(CurveTween(curve: curve));
+                              final offsetAnimation = animation.drive(tween);
+                              return SlideTransition(
+                                position: offsetAnimation,
+                                child: child,
+                              );
+                            },
+                          ),
+                        );
                       },
                     );
                   },
-                );
-              }),
+                ),
+              ),
             ),
-            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -176,10 +174,10 @@ class MainDashboardYear extends StatelessWidget {
 class _MonthCard extends StatelessWidget {
   final String label;
   final bool active;
-  final VoidCallback? onTap;
+  final VoidCallback?  onTap;
 
   const _MonthCard({
-    Key? key,
+    Key?  key,
     required this.label,
     this.active = false,
     this.onTap,
@@ -187,24 +185,24 @@ class _MonthCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final background = active ? const Color(0xFF6366F1) : const Color(0xFFE3E4F7);
+    final background = active ?  const Color(0xFF7C3AED) : const Color(0xFFE8E8F4);
     final textColor = active ? Colors.white : const Color(0xFF1E293B);
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        decoration: ShapeDecoration(
+        decoration: BoxDecoration(
           color: background,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          shadows: active
-              ? const [
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: active
+              ? [
             BoxShadow(
-              color: Color(0x293666F1),
+              color: const Color(0xFF7C3AED).withOpacity(0.3),
               blurRadius: 12,
-              offset: Offset(0, 4),
+              offset: const Offset(0, 4),
             )
           ]
-              : null,
+              :  null,
         ),
         child: Center(
           child: Text(
@@ -212,8 +210,7 @@ class _MonthCard extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               color: textColor,
-              fontSize: 18,
-              fontFamily: 'Lexend',
+              fontSize: 17,
               fontWeight: FontWeight.w600,
             ),
           ),

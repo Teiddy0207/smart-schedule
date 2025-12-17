@@ -74,7 +74,6 @@ class DashboardScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Ngày & điều khiển
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 22, 16, 0),
               child: Row(
@@ -82,7 +81,6 @@ class DashboardScreen extends StatelessWidget {
                   InkWell(
                     borderRadius: BorderRadius.circular(12),
                     onTap: () {
-                      // Sử dụng PageRouteBuilder để có hiệu ứng chuyển mượt mà hơn
                       Navigator.of(context).pushReplacement(
                         PageRouteBuilder(
                           transitionDuration: const Duration(milliseconds: 450),
@@ -91,7 +89,6 @@ class DashboardScreen extends StatelessWidget {
                             const begin = Offset(-1.0, 0.0);
                             const end = Offset.zero;
                             const curve = Curves.easeInOut;
-
                             final tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
                             final offsetAnimation = animation.drive(tween);
 
