@@ -11,7 +11,11 @@ class GoogleAuthService {
   static const String _serverClientId = '467169628226-pg9m6f83rl76baqitkcbj2ch2caqmhu9.apps.googleusercontent.com';
   
   static final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: ['email', 'profile'],
+    scopes: [
+      'email',
+      'profile',
+      'https://www.googleapis.com/auth/calendar.readonly', // Để đọc Google Calendar
+    ],
     serverClientId: _serverClientId, // For backend token verification
   );
 
@@ -53,26 +57,49 @@ class GoogleAuthService {
       print('  Display Name: $googleDisplayName');
       print('  Photo URL: $googlePhotoUrl');
 
-      // 2. Lấy idToken
+      // 2. Lấy idToken, accessToken và refreshToken
       final auth = await account.authentication;
       final idToken = auth.idToken;
+      final accessToken = auth.accessToken; // Google access token để gọi Calendar API
+      final serverAuthCode = auth.serverAuthCode; // Có thể dùng để exchange lấy refresh token
 
       if (idToken == null) {
         throw Exception('Không lấy được Google ID Token');
       }
 
-    // 3. Gửi idToken lên backend để verify
+      print('=== Google Sign-In Debug ===');
+      print('idToken: ${idToken != null ? "Có" : "Không"}');
+      print('accessToken: ${accessToken != null ? "Có" : "Không"}');
+      print('serverAuthCode: ${serverAuthCode != null ? "Có" : "Không"}');
+
+    // 3. Gửi idToken, accessToken và refreshToken (nếu có) lên backend để verify
     final url = Uri.parse('$_baseUrl/api/v1/public/auth/google/verify');
-    print('=== Google Sign-In Debug ===');
     print('Calling backend: $url');
     print('idToken length: ${idToken.length}');
+    
+    // Chuẩn bị request body
+    final requestBody = <String, dynamic>{
+      'idToken': idToken,
+    };
+    
+    // Thêm accessToken nếu có (cần để gọi Google Calendar API)
+    if (accessToken != null && accessToken.isNotEmpty) {
+      requestBody['accessToken'] = accessToken;
+      print('Sending accessToken to backend');
+    }
+    
+    // Thêm serverAuthCode nếu có (backend có thể dùng để exchange lấy refresh token)
+    if (serverAuthCode != null && serverAuthCode.isNotEmpty) {
+      requestBody['serverAuthCode'] = serverAuthCode;
+      print('Sending serverAuthCode to backend');
+    }
     
     http.Response response;
     try {
       response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'idToken': idToken}),
+        body: jsonEncode(requestBody),
       ).timeout(
         const Duration(seconds: 30),
         onTimeout: () {
