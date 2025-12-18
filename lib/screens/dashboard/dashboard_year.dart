@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import 'dashboard_month.dart';
 
 class MainDashboardYear extends StatelessWidget {
@@ -49,13 +50,18 @@ class MainDashboardYear extends StatelessWidget {
                     child: const Icon(Icons.calendar_today, color: Colors.white, size: 24),
                   ),
                   const SizedBox(width: 12),
-                  const Text(
-                    'Airbender',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Consumer<AuthProvider>(
+                    builder: (context, authProvider, _) {
+                      final username = authProvider.currentUser?.username ?? 'Người dùng';
+                      return Text(
+                        username,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      );
+                    },
                   ),
                   const Spacer(),
                   CircleAvatar(

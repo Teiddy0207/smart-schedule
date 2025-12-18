@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'dashboard_month.dart';
 
 class DashboardScreenContent extends StatelessWidget {
   const DashboardScreenContent({super.key});
+
+  String _formatDate(DateTime date) {
+    final vietnameseDays = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+    final dayName = vietnameseDays[date.weekday % 7];
+    return '$dayName - ${date.day}/${date.month}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,9 +43,9 @@ class DashboardScreenContent extends StatelessWidget {
                   child: const Icon(Icons.chevron_left, color: Color(0xFF6B5CE6), size: 32),
                 ),
                 const SizedBox(width: 6),
-                const Text(
-                  'Thứ 5 - 29/4',
-                  style: TextStyle(
+                Text(
+                  _formatDate(DateTime.now()),
+                  style: const TextStyle(
                     color: Color(0xFF6B5CE6),
                     fontWeight: FontWeight.w700,
                     fontSize: 22,
@@ -64,117 +71,29 @@ class DashboardScreenContent extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-              children: [
-                _buildHourItem(
-                  time: "08.00",
-                  child: _buildScheduleCard(
-                    title: "Daily Meeting",
-                    subtitle: "Online: Google meet",
-                    avatars: const [],
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.calendar_today,
+                    size: 64,
+                    color: Color(0xFFB4BAC7),
                   ),
-                ),
-                _buildHourItem(
-                  time: "14.00",
-                  child: _buildScheduleCard(
-                    title: "KT Construction System - Cloud Application Group",
-                    subtitle: "Offline: Room C3",
-                    avatars: const [],
+                  const SizedBox(height: 16),
+                  Text(
+                    'Không có sự kiện nào hôm nay',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey[600],
+                    ),
                   ),
-                ),
-                _buildHourItem(
-                  time: "16.00",
-                  child: _buildScheduleCard(
-                    title: "KT Construction System - Cloud Application Group",
-                    subtitle: "Offline: Room C3",
-                    avatars: const [],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  static Widget _buildHourItem({required String time, required Widget child}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 50,
-            child: Text(
-              time,
-              style: const TextStyle(
-                color: Color(0xFFB4BAC7),
-                fontWeight: FontWeight.w500,
-                fontSize: 16,
+                ],
               ),
-              textAlign: TextAlign.right,
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(child: child),
-        ],
-      ),
-    );
-  }
-
-  static Widget _buildScheduleCard({
-    required String title,
-    required String subtitle,
-    required List<String> avatars,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF7266EC),
-        borderRadius: BorderRadius.circular(24),
-      ),
-      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 19,
-                  ),
-                ),
-                const SizedBox(height: 7),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    color: Color(0xFFE9E6FC),
-                    fontWeight: FontWeight.w500,
-                    fontSize: 15,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Row(
-            children: avatars.take(2).map((url) => Padding(
-              padding: const EdgeInsets.only(left: 2),
-              child: CircleAvatar(
-                backgroundImage: NetworkImage(url),
-                radius: 18,
-              ),
-            )).toList(),
           ),
         ],
       ),
     );
   }
 }
-
-
