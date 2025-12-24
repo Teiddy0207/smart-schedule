@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import '../models/auth/login_request.dart';
 import '../models/auth/login_response.dart';
 import '../services/google_auth_service.dart';
 
@@ -26,12 +25,6 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // Create login request
-      final request = LoginRequest(
-        username: username,
-        password: password,
-      );
-
       // Simulate API call
       await Future.delayed(const Duration(seconds: 1));
 

@@ -7,6 +7,8 @@ import 'profile/profile_screen_content.dart';
 import 'event/create_event_screen.dart';
 import 'calendar/calendar_screen_content.dart';
 import '../providers/auth_provider.dart';
+import '../constants/app_constants.dart';
+import '../widgets/gradient_app_bar.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -29,12 +31,10 @@ class _MainScreenState extends State<MainScreen> {
           preferredSize: const Size.fromHeight(110),
           child: Container(
             decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF7E6DF7), Color(0xFF6B5CE6)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+              gradient: AppConstants.dashboardAppBarGradient,
+              borderRadius: BorderRadius.vertical(
+                bottom: Radius.circular(AppConstants.radiusXL),
               ),
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
             ),
             child: SafeArea(
               child: Padding(
@@ -50,7 +50,7 @@ class _MainScreenState extends State<MainScreen> {
                       child: const Icon(
                         Icons.calendar_today,
                         color: Colors.white,
-                        size: 26,
+                        size: AppConstants.iconSizeLarge,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -88,19 +88,10 @@ class _MainScreenState extends State<MainScreen> {
           ),
         );
       case 1: // Group
-        return AppBar(
-          flexibleSpace: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF9C88FF), Color(0xFF7C3AED)],
-              ),
-            ),
-          ),
-          elevation: 0,
+        return GradientAppBar(
+          title: 'Nhóm của bạn',
           leading: Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(AppConstants.spacingS),
             child: Container(
               decoration: const BoxDecoration(
                 color: Colors.white,
@@ -108,41 +99,19 @@ class _MainScreenState extends State<MainScreen> {
               ),
               child: const Icon(
                 Icons.event_available,
-                color: Color(0xFF7C3AED),
-                size: 20,
+                color: AppConstants.gradientEnd,
+                size: AppConstants.iconSizeSmall,
               ),
-            ),
-          ),
-          title: const Text(
-            'Nhóm của bạn',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
             ),
           ),
           actions: [
-            IconButton(
-              icon: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
-                padding: const EdgeInsets.all(8),
-                child: const Icon(Icons.search, color: Color(0xFF7C3AED), size: 20),
-              ),
+            AppBarIconButton(
+              icon: Icons.search,
               onPressed: () {},
             ),
             Builder(
-              builder: (context) => IconButton(
-                icon: Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                  padding: const EdgeInsets.all(8),
-                  child: const Icon(Icons.add, color: Color(0xFF7C3AED), size: 20),
-                ),
+              builder: (context) => AppBarIconButton(
+                icon: Icons.add,
                 onPressed: () {
                   Navigator.push(
                     context,
@@ -156,22 +125,10 @@ class _MainScreenState extends State<MainScreen> {
       case 2: // Profile - không có AppBar
         return null;
       case 3: // Calendar
-        return AppBar(
-          flexibleSpace: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF9C88FF),
-                  Color(0xFF7C3AED),
-                ],
-              ),
-            ),
-          ),
-          elevation: 0,
+        return GradientAppBar(
+          title: 'Lịch',
           leading: Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(AppConstants.spacingS),
             child: Container(
               decoration: const BoxDecoration(
                 color: Colors.white,
@@ -179,33 +136,14 @@ class _MainScreenState extends State<MainScreen> {
               ),
               child: const Icon(
                 Icons.calendar_today,
-                color: Color(0xFF7C3AED),
-                size: 20,
+                color: AppConstants.gradientEnd,
+                size: AppConstants.iconSizeSmall,
               ),
-            ),
-          ),
-          title: const Text(
-            'Lịch',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
             ),
           ),
           actions: [
-            IconButton(
-              icon: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
-                padding: const EdgeInsets.all(8),
-                child: const Icon(
-                  Icons.today,
-                  color: Color(0xFF7C3AED),
-                  size: 20,
-                ),
-              ),
+            AppBarIconButton(
+              icon: Icons.today,
               onPressed: () {},
             ),
           ],
@@ -240,7 +178,7 @@ class _MainScreenState extends State<MainScreen> {
           }
         },
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF7C3AED),
+        selectedItemColor: AppConstants.gradientEnd,
         unselectedItemColor: Colors.grey[600],
         selectedFontSize: 10,
         unselectedFontSize: 10,
@@ -263,7 +201,7 @@ class _MainScreenState extends State<MainScreen> {
             MaterialPageRoute(builder: (context) => const CreateEventScreen()),
           );
         },
-        backgroundColor: const Color(0xFF7C3AED),
+        backgroundColor: AppConstants.gradientEnd,
         child: const Icon(Icons.add, color: Colors.white),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
