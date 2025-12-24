@@ -29,4 +29,10 @@ class DateFormatter {
   static String formatDateTime(DateTime date) {
     return '${formatShortDate(date)} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
+
+  /// Alias for formatVietnameseDate
+  static String formatDayMonth(DateTime date) {
+    return formatVietnameseDate(date);
+  }
 }
+
