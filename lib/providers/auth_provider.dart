@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/auth/login_response.dart';
 import '../services/google_auth_service.dart';
 
@@ -10,6 +11,14 @@ class AuthProvider with ChangeNotifier {
   String? _token;
   String? _refreshToken;
 
+  // Keys cho SharedPreferences
+  static const String _keyToken = 'auth_token';
+  static const String _keyRefreshToken = 'auth_refresh_token';
+  static const String _keyUserId = 'auth_user_id';
+  static const String _keyUsername = 'auth_username';
+  static const String _keyEmail = 'auth_email';
+  static const String _keyFullName = 'auth_full_name';
+
   // Getters
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _isAuthenticated;
@@ -17,6 +26,83 @@ class AuthProvider with ChangeNotifier {
   User? get currentUser => _currentUser;
   String? get token => _token;
   String? get username => _currentUser?.username;
+
+  // Constructor - Load token từ SharedPreferences khi khởi tạo
+  AuthProvider() {
+    _loadTokenFromStorage();
+  }
+
+  // Load token từ SharedPreferences
+  Future<void> _loadTokenFromStorage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString(_keyToken);
+      final refreshToken = prefs.getString(_keyRefreshToken);
+      final userId = prefs.getString(_keyUserId);
+      final username = prefs.getString(_keyUsername);
+      final email = prefs.getString(_keyEmail);
+      final fullName = prefs.getString(_keyFullName);
+
+      if (token != null && token.isNotEmpty) {
+        _token = token;
+        _refreshToken = refreshToken;
+        _isAuthenticated = true;
+        
+        if (userId != null && username != null) {
+          _currentUser = User(
+            id: userId,
+            username: username,
+            email: email,
+            fullName: fullName,
+          );
+        }
+        
+        notifyListeners();
+      }
+    } catch (e) {
+      print('Error loading token from storage: $e');
+    }
+  }
+
+  // Lưu token vào SharedPreferences
+  Future<void> _saveTokenToStorage(String token, String? refreshToken, User? user) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_keyToken, token);
+      
+      if (refreshToken != null) {
+        await prefs.setString(_keyRefreshToken, refreshToken);
+      }
+      
+      if (user != null) {
+        await prefs.setString(_keyUserId, user.id);
+        await prefs.setString(_keyUsername, user.username);
+        if (user.email != null) {
+          await prefs.setString(_keyEmail, user.email!);
+        }
+        if (user.fullName != null) {
+          await prefs.setString(_keyFullName, user.fullName!);
+        }
+      }
+    } catch (e) {
+      print('Error saving token to storage: $e');
+    }
+  }
+
+  // Xóa token khỏi SharedPreferences
+  Future<void> _clearTokenFromStorage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_keyToken);
+      await prefs.remove(_keyRefreshToken);
+      await prefs.remove(_keyUserId);
+      await prefs.remove(_keyUsername);
+      await prefs.remove(_keyEmail);
+      await prefs.remove(_keyFullName);
+    } catch (e) {
+      print('Error clearing token from storage: $e');
+    }
+  }
 
   // Login method
   Future<bool> login(String username, String password) async {
@@ -52,6 +138,10 @@ class AuthProvider with ChangeNotifier {
         _token = response.token;
         _refreshToken = response.refreshToken;
         _errorMessage = null;
+        
+        // Lưu token vào SharedPreferences
+        await _saveTokenToStorage(_token!, _refreshToken, _currentUser);
+        
         notifyListeners();
         return true;
       } else {
@@ -74,6 +164,9 @@ class AuthProvider with ChangeNotifier {
   Future<void> logout() async {
     // Sign out khỏi Google để lần sau có thể chọn tài khoản khác
     await GoogleAuthService.signOut();
+    
+    // Xóa token khỏi SharedPreferences
+    await _clearTokenFromStorage();
     
     _isAuthenticated = false;
     _currentUser = null;
@@ -106,6 +199,9 @@ class AuthProvider with ChangeNotifier {
         email: googleResponse.data.email,
         fullName: googleResponse.data.displayName,
       );
+      
+      // Lưu token vào SharedPreferences
+      await _saveTokenToStorage(_token!, _refreshToken, _currentUser);
       
       _errorMessage = null;
       notifyListeners();
