@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../constants/app_constants.dart';
 import '../login/login_screen.dart';
 
 class ProfileScreenContent extends StatelessWidget {
@@ -136,14 +137,7 @@ class ProfileScreenContent extends StatelessWidget {
     return Container(
       height: 200,
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF9C88FF),
-            Color(0xFF7C3AED),
-          ],
-        ),
+        gradient: AppConstants.appBarGradient,
       ),
       child: Stack(
         children: [
@@ -215,7 +209,7 @@ class ProfileScreenContent extends StatelessWidget {
                     ),
                     child: const Icon(
                       Icons.edit,
-                      color: Color(0xFF7C3AED),
+                      color: AppConstants.gradientEnd,
                       size: 18,
                     ),
                   ),
@@ -258,7 +252,7 @@ class ProfileScreenContent extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.3),
+              color: Colors.white.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
@@ -280,7 +274,7 @@ class ProfileScreenContent extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withValues(alpha: 0.9),
               fontSize: 12,
             ),
           ),
@@ -311,7 +305,7 @@ class ProfileScreenContent extends StatelessWidget {
               child: Text(
                 'G',
                 style: TextStyle(
-                  color: Color(0xFF4285F4),
+                  color: AppConstants.googleBlue,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'create_group.dart';
 import 'list_user_of_group.dart';
+import '../../constants/app_constants.dart';
 
 class GroupScreenContent extends StatelessWidget {
   const GroupScreenContent({super.key});
@@ -52,15 +52,8 @@ class GroupScreenContent extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF9C88FF),
-              Color(0xFF7C3AED),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(12),
+          gradient: AppConstants.appBarGradient,
+          borderRadius: BorderRadius.circular(AppConstants.radiusM),
         ),
         child: Row(
           children: [
@@ -73,11 +66,11 @@ class GroupScreenContent extends StatelessWidget {
               ),
               child: const Icon(
                 Icons.group,
-                color: Color(0xFF7C3AED),
-                size: 24,
+                color: AppConstants.gradientEnd,
+                size: AppConstants.iconSizeMedium,
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: AppConstants.spacingL),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

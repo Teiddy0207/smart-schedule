@@ -7,6 +7,7 @@ import 'profile/profile_screen_content.dart';
 import 'event/create_event_screen.dart';
 import 'calendar/calendar_screen_content.dart';
 import '../providers/auth_provider.dart';
+import '../constants/app_constants.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -18,51 +19,72 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  // Builder function để tạo AppBar động với username
-  PreferredSizeWidget? _buildAppBar(int index, BuildContext context) {
+  // Danh sách các body tương ứng - THỨ TỰ GIỐNG BOTTOM NAV
+  late final List<Widget> _screens = const [
+    DashboardScreenContent(),   // Trang chủ
+    CalendarScreenContent(),    // Lịch
+    GroupScreenContent(),       // Nhóm
+    ProfileScreenContent(),     // Cá nhân
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: _buildAppBar(context),
+      body: IndexedStack(index: _currentIndex, children: _screens),
+      bottomNavigationBar: _buildBottomNavBar(),
+      floatingActionButton: _buildFAB(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+    );
+  }
+
+  PreferredSizeWidget? _buildAppBar(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final username = authProvider.currentUser?.username ?? 'Người dùng';
-    
-    switch (index) {
-      case 0: // Dashboard
+
+    switch (_currentIndex) {
+      case 0: // Trang chủ
         return PreferredSize(
           preferredSize: const Size.fromHeight(110),
           child: Container(
             decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF7E6DF7), Color(0xFF6B5CE6)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+              gradient: AppConstants.dashboardAppBarGradient,
+              borderRadius: BorderRadius.vertical(
+                bottom: Radius.circular(AppConstants.radiusXL),
               ),
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
             ),
             child: SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: AppConstants.spacingL,
+                ),
                 child: Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(13),
                       decoration: BoxDecoration(
                         color: Colors.white24,
-                        borderRadius: BorderRadius.circular(50),
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.radiusCircle,
+                        ),
                       ),
                       child: const Icon(
                         Icons.calendar_today,
                         color: Colors.white,
-                        size: 26,
+                        size: AppConstants.iconSizeLarge,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Text(
-                      username,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
+                    const SizedBox(width: AppConstants.radiusM),
+                    Expanded(
+                      child: Text(
+                        username,
+                        style: AppConstants.headingMedium,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const Spacer(),
+                    const SizedBox(width: 8),
                     CircleAvatar(
                       backgroundColor: Colors.white24,
                       child: IconButton(
@@ -87,186 +109,250 @@ class _MainScreenState extends State<MainScreen> {
             ),
           ),
         );
-      case 1: // Group
-        return AppBar(
-          flexibleSpace: Container(
+      case 1: // Lịch
+        return PreferredSize(
+          preferredSize: const Size.fromHeight(110),
+          child: Container(
             decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF9C88FF), Color(0xFF7C3AED)],
+              gradient: AppConstants.dashboardAppBarGradient,
+              borderRadius: BorderRadius.vertical(
+                bottom: Radius.circular(AppConstants.radiusXL),
               ),
             ),
-          ),
-          elevation: 0,
-          leading: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.event_available,
-                color: Color(0xFF7C3AED),
-                size: 20,
-              ),
-            ),
-          ),
-          title: const Text(
-            'Nhóm của bạn',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-            ),
-          ),
-          actions: [
-            IconButton(
-              icon: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: AppConstants.spacingL,
                 ),
-                padding: const EdgeInsets.all(8),
-                child: const Icon(Icons.search, color: Color(0xFF7C3AED), size: 20),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(13),
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.radiusCircle,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.calendar_today,
+                        color: Colors.white,
+                        size: AppConstants.iconSizeLarge,
+                      ),
+                    ),
+                    const SizedBox(width: AppConstants.radiusM),
+                    const Text(
+                      'Lịch',
+                      style: AppConstants.headingMedium,
+                    ),
+                    const Spacer(),
+                    CircleAvatar(
+                      backgroundColor: Colors.white24,
+                      child: IconButton(
+                        icon: const Icon(Icons.today, color: Colors.white),
+                        onPressed: () {},
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              onPressed: () {},
             ),
-            Builder(
-              builder: (context) => IconButton(
-                icon: Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
+          ),
+        );
+      case 2: // Nhóm
+        return PreferredSize(
+          preferredSize: const Size.fromHeight(110),
+          child: Builder(
+            builder: (context) => Container(
+              decoration: const BoxDecoration(
+                gradient: AppConstants.dashboardAppBarGradient,
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(AppConstants.radiusXL),
+                ),
+              ),
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: AppConstants.spacingL,
                   ),
-                  padding: const EdgeInsets.all(8),
-                  child: const Icon(Icons.add, color: Color(0xFF7C3AED), size: 20),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(13),
+                        decoration: BoxDecoration(
+                          color: Colors.white24,
+                          borderRadius: BorderRadius.circular(
+                            AppConstants.radiusCircle,
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.group,
+                          color: Colors.white,
+                          size: AppConstants.iconSizeLarge,
+                        ),
+                      ),
+                      const SizedBox(width: AppConstants.radiusM),
+                      const Text(
+                        'Nhóm của bạn',
+                        style: AppConstants.headingMedium,
+                      ),
+                      const Spacer(),
+                      CircleAvatar(
+                        backgroundColor: Colors.white24,
+                        child: IconButton(
+                          icon: const Icon(Icons.search, color: Colors.white),
+                          onPressed: () {},
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      CircleAvatar(
+                        backgroundColor: Colors.white24,
+                        child: IconButton(
+                          icon: const Icon(Icons.add, color: Colors.white),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const CreateGroup(),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const CreateGroup()),
-                  );
-                },
               ),
             ),
-          ],
+          ),
         );
-      case 2: // Profile - không có AppBar
+      case 3: // Cá nhân
         return null;
-      case 3: // Calendar
-        return AppBar(
-          flexibleSpace: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF9C88FF),
-                  Color(0xFF7C3AED),
-                ],
-              ),
-            ),
-          ),
-          elevation: 0,
-          leading: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.calendar_today,
-                color: Color(0xFF7C3AED),
-                size: 20,
-              ),
-            ),
-          ),
-          title: const Text(
-            'Lịch',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-            ),
-          ),
-          actions: [
-            IconButton(
-              icon: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
-                padding: const EdgeInsets.all(8),
-                child: const Icon(
-                  Icons.today,
-                  color: Color(0xFF7C3AED),
-                  size: 20,
-                ),
-              ),
-              onPressed: () {},
-            ),
-          ],
-        );
       default:
         return null;
     }
   }
 
-  // Danh sách các body tương ứng với bottom nav bar
-  // IndexedStack tự động giữ state, không cần PageStorage
-  late final List<Widget> _screens = const [
-    DashboardScreenContent(),
-    GroupScreenContent(),
-    ProfileScreenContent(),
-    CalendarScreenContent(),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: _buildAppBar(_currentIndex, context),
-      body: IndexedStack(index: _currentIndex, children: _screens),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          if (_currentIndex != index) {
-            setState(() {
-              _currentIndex = index;
-            });
-          }
-        },
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF7C3AED),
-        unselectedItemColor: Colors.grey[600],
-        selectedFontSize: 10,
-        unselectedFontSize: 10,
-        iconSize: 24,
-        elevation: 8,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Trang chủ'),
-          BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Nhóm'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Cá nhân'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today),
-            label: 'Lịch',
+  Widget _buildBottomNavBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppConstants.spacingS,
+            vertical: AppConstants.spacingS,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              // Trang chủ
+              _buildNavItem(
+                icon: Icons.home,
+                label: 'Trang chủ',
+                index: 0,
+              ),
+              // Lịch
+              _buildNavItem(
+                icon: Icons.calendar_today,
+                label: 'Lịch',
+                index: 1,
+              ),
+              // Khoảng trống cho FAB
+              const SizedBox(width: 56),
+              // Nhóm
+              _buildNavItem(
+                icon: Icons.group,
+                label: 'Nhóm',
+                index: 2,
+              ),
+              // Cá nhân
+              _buildNavItem(
+                icon: Icons.person,
+                label: 'Cá nhân',
+                index: 3,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem({
+    required IconData icon,
+    required String label,
+    required int index,
+  }) {
+    final isSelected = _currentIndex == index;
+    final color = isSelected ? AppConstants.gradientEnd : Colors.grey[600];
+
+    return InkWell(
+      onTap: () {
+        if (_currentIndex != index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        }
+      },
+      borderRadius: BorderRadius.circular(AppConstants.radiusM),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppConstants.radiusM,
+          vertical: AppConstants.spacingS,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: color,
+              size: AppConstants.iconSizeMedium,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 10,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFAB() {
+    return Container(
+      height: 56,
+      width: 56,
+      margin: const EdgeInsets.only(top: 30),
+      child: FloatingActionButton(
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const CreateEventScreen()),
+            MaterialPageRoute(
+              builder: (context) => const CreateEventScreen(),
+            ),
           );
         },
-        backgroundColor: const Color(0xFF7C3AED),
-        child: const Icon(Icons.add, color: Colors.white),
+        backgroundColor: AppConstants.gradientEnd,
+        elevation: 4,
+        shape: const CircleBorder(),
+        child: const Icon(Icons.add, color: Colors.white, size: 28),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 }

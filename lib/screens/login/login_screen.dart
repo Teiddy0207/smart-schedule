@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../constants/app_constants.dart';
+import '../../widgets/social_login_button.dart';
 import '../main_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -96,14 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF9B7EDE), // Light purple
-              Color(0xFF6B5CE6), // Blue-purple
-            ],
-          ),
+          gradient: AppConstants.loginGradient,
         ),
         child: SafeArea(
           child: SingleChildScrollView(
@@ -111,7 +106,7 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 // Header Section
                 _buildHeader(),
-                const SizedBox(height: 20),
+                const SizedBox(height: AppConstants.spacingXL),
                 // Login Form Card
                 _buildLoginCard(),
               ],
@@ -132,13 +127,13 @@ class _LoginScreenState extends State<LoginScreen> {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: const Color(0xFFB8A9E8).withOpacity(0.3),
+              color: AppConstants.lightPurple.withValues(alpha: 0.3),
               shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.event_available,
               color: Colors.white,
-              size: 50,
+              size: AppConstants.iconSizeXL,
             ),
           ),
           const SizedBox(height: 16),
@@ -174,7 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -200,7 +195,7 @@ class _LoginScreenState extends State<LoginScreen> {
               decoration: InputDecoration(
                 hintText: 'Nhập tên đăng nhập',
                 filled: true,
-                fillColor: const Color(0xFFF0F4F8),
+                fillColor: AppConstants.inputBackground,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -212,7 +207,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: const BorderSide(
-                    color: Color(0xFF6B5CE6),
+                    color: AppConstants.primaryColor,
                     width: 2,
                   ),
                 ),
@@ -280,7 +275,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: const BorderSide(
-                    color: Color(0xFF6B5CE6),
+                    color: AppConstants.primaryColor,
                     width: 2,
                   ),
                 ),
@@ -317,14 +312,11 @@ class _LoginScreenState extends State<LoginScreen> {
             Consumer<AuthProvider>(
               builder: (context, authProvider, child) {
                 return Container(
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [
-                        Color(0xFF9B7EDE),
-                        Color(0xFF6B5CE6),
-                      ],
+                  decoration: const BoxDecoration(
+                    gradient: AppConstants.primaryGradient,
+                    borderRadius: BorderRadius.all(
+                      Radius.circular(AppConstants.radiusM),
                     ),
-                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: ElevatedButton(
                     onPressed: authProvider.isLoading ? null : _handleLogin,
@@ -349,11 +341,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           )
                         : const Text(
                             'Đăng nhập',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: AppConstants.buttonText,
                           ),
                   ),
                 );
@@ -392,13 +380,13 @@ class _LoginScreenState extends State<LoginScreen> {
             Row(
               children: [
                 Expanded(
-                  child: _buildSocialButton(
+                  child: SocialLoginButton(
                     icon: const Text(
                       'G',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF4285F4),
+                        color: AppConstants.googleBlue,
                       ),
                     ),
                     onPressed: () => _handleGoogleLogin(),
@@ -406,18 +394,18 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _buildSocialButton(
+                  child: SocialLoginButton(
                     icon: Container(
-                      width: 24,
-                      height: 24,
+                      width: AppConstants.iconSizeMedium,
+                      height: AppConstants.iconSizeMedium,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF0078D4),
+                        color: AppConstants.microsoftBlue,
                         borderRadius: BorderRadius.circular(2),
                       ),
                       child: const Icon(
                         Icons.window,
                         color: Colors.white,
-                        size: 16,
+                        size: AppConstants.spacingL,
                       ),
                     ),
                     onPressed: () {
@@ -447,7 +435,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     'Đăng ký',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Color(0xFF6B5CE6),
+                      color: AppConstants.primaryColor,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -460,22 +448,5 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildSocialButton({
-    required Widget icon,
-    required VoidCallback onPressed,
-  }) {
-    return OutlinedButton(
-      onPressed: onPressed,
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        side: BorderSide(color: Colors.grey[300]!),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        backgroundColor: Colors.white,
-      ),
-      child: icon,
-    );
-  }
 }
 
