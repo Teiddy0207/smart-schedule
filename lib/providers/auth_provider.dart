@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/auth/login_response.dart';
+import '../services/api_service.dart';
 import '../services/google_auth_service.dart';
 
 class AuthProvider with ChangeNotifier {
@@ -47,6 +48,9 @@ class AuthProvider with ChangeNotifier {
         _token = token;
         _refreshToken = refreshToken;
         _isAuthenticated = true;
+        
+        // Set token for API calls
+        ApiService.setAccessToken(token);
         
         if (userId != null && username != null) {
           _currentUser = User(
@@ -105,56 +109,60 @@ class AuthProvider with ChangeNotifier {
   }
 
   // Login method
-  Future<bool> login(String username, String password) async {
+  Future<bool> login(String identifier, String password) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 1));
-
-      // TODO: Replace with actual API call
-      // final response = await authRepository.login(request);
-
-      // For now, simulate successful login
-      if (username.isNotEmpty && password.isNotEmpty) {
-        final response = LoginResponse(
-          success: true,
-          token: 'mock_token_${DateTime.now().millisecondsSinceEpoch}',
-          refreshToken: 'mock_refresh_token_${DateTime.now().millisecondsSinceEpoch}',
-          user: User(
-            id: '1',
-            username: username,
-            email: '$username@example.com',
-            fullName: username,
-          ),
-          message: 'Đăng nhập thành công',
-        );
-
-        _isLoading = false;
-        _isAuthenticated = true;
-        _currentUser = response.user;
-        _token = response.token;
-        _refreshToken = response.refreshToken;
-        _errorMessage = null;
-        
-        // Lưu token vào SharedPreferences
-        await _saveTokenToStorage(_token!, _refreshToken, _currentUser);
-        
-        notifyListeners();
-        return true;
-      } else {
+      // Validate input
+      if (identifier.isEmpty || password.isEmpty) {
         _isLoading = false;
         _isAuthenticated = false;
         _errorMessage = 'Tên đăng nhập và mật khẩu không được để trống';
         notifyListeners();
         return false;
       }
+
+      // Call real API
+      final response = await ApiService.post(
+        '/api/v1/public/auth/login',
+        body: {
+          'identifiers': identifier,
+          'password': password,
+        },
+        requireAuth: false,
+      );
+
+      // Parse response - Backend returns access_token and refresh_token in data
+      final data = response['data'] as Map<String, dynamic>? ?? response;
+      final loginResponse = LoginResponse.fromJson(data);
+
+      _isLoading = false;
+      _isAuthenticated = true;
+      _token = loginResponse.accessToken;
+      _refreshToken = loginResponse.refreshToken;
+      
+      // Create user from identifier for now
+      // TODO: Fetch user profile from API
+      _currentUser = User(
+        id: 'user_${DateTime.now().millisecondsSinceEpoch}',
+        username: identifier,
+      );
+      
+      // Set token for future API calls
+      ApiService.setAccessToken(_token);
+      
+      // Save to SharedPreferences
+      await _saveTokenToStorage(_token!, _refreshToken, _currentUser);
+      
+      _errorMessage = null;
+      notifyListeners();
+      return true;
     } catch (e) {
       _isLoading = false;
       _isAuthenticated = false;
-      _errorMessage = 'Đã xảy ra lỗi: ${e.toString()}';
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
       notifyListeners();
       return false;
     }
@@ -199,6 +207,9 @@ class AuthProvider with ChangeNotifier {
         email: googleResponse.data.email,
         fullName: googleResponse.data.displayName,
       );
+      
+      // Set token for API calls
+      ApiService.setAccessToken(_token);
       
       // Lưu token vào SharedPreferences
       await _saveTokenToStorage(_token!, _refreshToken, _currentUser);
