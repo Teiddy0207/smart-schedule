@@ -33,29 +33,46 @@ class _GroupScreenContentState extends State<GroupScreenContent> {
 
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final currentUserId = authProvider.currentUser?.id;
       
-      final groups = await GroupService.getMyGroups(
+      if (currentUserId == null || currentUserId.isEmpty) {
+        throw Exception('Không thể xác định user hiện tại. Vui lòng đăng nhập lại.');
+      }
+      
+      final allGroups = await GroupService.getMyGroups(
         authProvider: authProvider,
       );
 
-      // Lấy số lượng thành viên cho mỗi nhóm
+      // Lọc chỉ các nhóm mà user hiện tại đã tham gia hoặc đã tạo
+      final filteredGroups = <Group>[];
       final memberCounts = <String, int>{};
-      for (final group in groups) {
+      
+      for (final group in allGroups) {
         try {
           final usersResponse = await GroupService.getUsersByGroupId(
             authProvider: authProvider,
             groupId: group.id,
           );
-          memberCounts[group.id] = usersResponse.users.length;
+          
+          // Kiểm tra xem user hiện tại có trong danh sách users của nhóm không
+          final isMember = usersResponse.users.any(
+            (groupUser) => groupUser.userId == currentUserId,
+          );
+          
+          if (isMember) {
+            // User là thành viên của nhóm này, thêm vào danh sách
+            filteredGroups.add(group);
+            memberCounts[group.id] = usersResponse.users.length;
+          }
         } catch (e) {
-          // Nếu không lấy được số thành viên, để 0
-          memberCounts[group.id] = 0;
+          // Nếu không lấy được danh sách users, bỏ qua nhóm này
+          print('Không thể lấy danh sách users cho nhóm ${group.id}: $e');
         }
       }
 
       if (mounted) {
         setState(() {
-          _groups = groups;
+          _groups = filteredGroups;
           _memberCounts = memberCounts;
           _isLoading = false;
         });
