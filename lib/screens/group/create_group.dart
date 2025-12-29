@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/group_service.dart';
+import 'list_user_of_group.dart';
 
 class CreateGroup extends StatefulWidget {
   const CreateGroup({super.key});
@@ -16,21 +17,8 @@ class _CreateGroupState extends State<CreateGroup> {
   bool _isLoading = false;
   String? _errorMessage;
   
-  // fake data
-  List<Map<String, String>> _members = [
-    {
-      'name': 'Akbander',
-      'email': 'mrquang176@gmail.com',
-    },
-    {
-      'name': 'Quang SDS',
-      'email': 'mrquang176@gmail.com',
-    },
-    {
-      'name': 'Quang SDS',
-      'email': 'mrquang176@gmail.com',
-    },
-  ];
+  // Danh sách thành viên (sẽ được thêm sau khi có API thêm thành viên)
+  List<Map<String, String>> _members = [];
 
   @override
   void dispose() {
@@ -87,7 +75,23 @@ class _CreateGroupState extends State<CreateGroup> {
       );
 
       if (mounted) {
-        Navigator.pop(context, response.group);
+        // Kiểm tra xem có ID nhóm không
+        if (response.group.id.isNotEmpty) {
+          // Có ID, điều hướng đến màn hình nhóm mới vừa tạo
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ListUserOfGroup(
+                groupName: response.group.name,
+                groupId: response.group.id,
+              ),
+            ),
+          );
+        } else {
+          // Không có ID (backend không trả về), chỉ pop về màn hình trước
+          Navigator.pop(context);
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Tạo nhóm thành công!'),

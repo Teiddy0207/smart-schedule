@@ -20,11 +20,11 @@ class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
   // Danh sách các body tương ứng - THỨ TỰ GIỐNG BOTTOM NAV
-  late final List<Widget> _screens = const [
-    DashboardScreenContent(),   // Trang chủ
-    CalendarScreenContent(),    // Lịch
-    GroupScreenContent(),       // Nhóm
-    ProfileScreenContent(),     // Cá nhân
+  late final List<Widget> _screens = [
+    const DashboardScreenContent(),   // Trang chủ
+    const CalendarScreenContent(),    // Lịch
+    GroupScreenContent(),             // Nhóm (StatefulWidget không thể const trong list)
+    const ProfileScreenContent(),     // Cá nhân
   ];
 
   @override

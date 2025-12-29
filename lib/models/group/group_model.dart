@@ -11,9 +11,9 @@ class Group {
 
   factory Group.fromJson(Map<String, dynamic> json) {
     return Group(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      description: json['description'] as String? ?? '',
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
     );
   }
 
@@ -108,8 +108,17 @@ class CreateGroupResponse {
   });
 
   factory CreateGroupResponse.fromJson(Map<String, dynamic> json) {
+    if (json['group'] == null) {
+      throw Exception('Response không chứa thông tin nhóm (group is null)');
+    }
+    
+    final groupData = json['group'];
+    if (groupData is! Map<String, dynamic>) {
+      throw Exception('Thông tin nhóm không đúng định dạng. Nhận được: ${groupData.runtimeType}');
+    }
+    
     return CreateGroupResponse(
-      group: Group.fromJson(json['group'] as Map<String, dynamic>),
+      group: Group.fromJson(groupData),
     );
   }
 }
