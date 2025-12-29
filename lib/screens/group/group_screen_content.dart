@@ -13,19 +13,48 @@ class GroupScreenContent extends StatefulWidget {
   final int? refreshTrigger; // Thay đổi giá trị này sẽ trigger refresh
 
   @override
-  State<GroupScreenContent> createState() => _GroupScreenContentState();
+  State<GroupScreenContent> createState() => GroupScreenContentState();
 }
 
-class _GroupScreenContentState extends State<GroupScreenContent> {
+class GroupScreenContentState extends State<GroupScreenContent> {
   bool _isLoading = true;
   String? _errorMessage;
   List<Group> _groups = [];
+  List<Group> _filteredGroups = []; // Danh sách nhóm đã filter theo search
   Map<String, int> _memberCounts = {}; // Map groupId -> memberCount
+  final TextEditingController _searchController = TextEditingController();
+  bool _isSearching = false;
 
   @override
   void initState() {
     super.initState();
     _loadGroups();
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    _filterGroups(_searchController.text);
+  }
+
+  void _filterGroups(String query) {
+    setState(() {
+      if (query.trim().isEmpty) {
+        _filteredGroups = _groups;
+        _isSearching = false;
+      } else {
+        _isSearching = true;
+        final lowerQuery = query.toLowerCase().trim();
+        _filteredGroups = _groups.where((group) {
+          return group.name.toLowerCase().contains(lowerQuery);
+        }).toList();
+      }
+    });
   }
 
   @override
@@ -115,6 +144,8 @@ class _GroupScreenContentState extends State<GroupScreenContent> {
           _memberCounts = memberCounts;
           _isLoading = false;
         });
+        // Áp dụng filter search nếu có
+        _filterGroups(_searchController.text);
         print('State updated. Groups: ${_groups.length}, MemberCounts: ${_memberCounts.length}');
       }
     } catch (e) {
@@ -164,41 +195,88 @@ class _GroupScreenContentState extends State<GroupScreenContent> {
       );
     }
 
-    if (_groups.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(32.0),
-          child: Text(
-            'Chưa có nhóm nào',
-            style: TextStyle(
-              color: Colors.grey,
-              fontSize: 16,
+    // Sử dụng _filteredGroups thay vì _groups để hiển thị
+    final displayGroups = _isSearching ? _filteredGroups : _groups;
+
+    return Column(
+      children: [
+        // Search bar
+        Container(
+          padding: const EdgeInsets.all(16),
+          color: Colors.white,
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Tìm kiếm nhóm theo tên...',
+              hintStyle: TextStyle(color: Colors.grey[400]),
+              filled: true,
+              fillColor: Colors.grey[100],
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Color(0xFF2196F3), width: 2),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              prefixIcon: const Icon(Icons.search, color: Color(0xFF2196F3)),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 20),
+                      onPressed: () {
+                        _searchController.clear();
+                      },
+                    )
+                  : null,
             ),
           ),
         ),
-      );
-    }
 
-    return RefreshIndicator(
-      onRefresh: _loadGroups,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _groups.length,
-        itemBuilder: (context, index) {
-          final group = _groups[index];
-          final memberCount = _memberCounts[group.id] ?? 1; // Mặc định ít nhất 1 (người tạo)
-          print('Building card for group ${group.name} (ID: ${group.id})');
-          print('  MemberCounts map contains key ${group.id}? ${_memberCounts.containsKey(group.id)}');
-          print('  Value from map: ${_memberCounts[group.id]}');
-          print('  Final memberCount to display: $memberCount');
-          return _buildGroupCard(
-            context: context,
-            name: group.name,
-            memberCount: memberCount,
-            groupId: group.id,
-          );
-        },
-      ),
+        // Danh sách nhóm
+        Expanded(
+          child: displayGroups.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32.0),
+                    child: Text(
+                      _isSearching
+                          ? 'Không tìm thấy nhóm nào với từ khóa "${_searchController.text}"'
+                          : 'Chưa có nhóm nào',
+                      style: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 16,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: _loadGroups,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: displayGroups.length,
+                    itemBuilder: (context, index) {
+                      final group = displayGroups[index];
+                      final memberCount = _memberCounts[group.id] ?? 1; // Mặc định ít nhất 1 (người tạo)
+                      return _buildGroupCard(
+                        context: context,
+                        name: group.name,
+                        memberCount: memberCount,
+                        groupId: group.id,
+                      );
+                    },
+                  ),
+                ),
+        ),
+      ],
     );
   }
 

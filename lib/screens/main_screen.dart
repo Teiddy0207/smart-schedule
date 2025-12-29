@@ -24,7 +24,9 @@ class _MainScreenState extends State<MainScreen> {
   List<Widget> get _screens => [
     const DashboardScreenContent(),   // Trang chủ
     const CalendarScreenContent(),    // Lịch
-    GroupScreenContent(refreshTrigger: _groupRefreshTrigger), // Nhóm
+    GroupScreenContent(
+      refreshTrigger: _groupRefreshTrigger,
+    ), // Nhóm
     const ProfileScreenContent(),     // Cá nhân
   ];
 
@@ -200,14 +202,6 @@ class _MainScreenState extends State<MainScreen> {
                         style: AppConstants.headingMedium,
                       ),
                       const Spacer(),
-                      CircleAvatar(
-                        backgroundColor: Colors.white24,
-                        child: IconButton(
-                          icon: const Icon(Icons.search, color: Colors.white),
-                          onPressed: () {},
-                        ),
-                      ),
-                      const SizedBox(width: 10),
                       CircleAvatar(
                         backgroundColor: Colors.white24,
                         child: IconButton(
