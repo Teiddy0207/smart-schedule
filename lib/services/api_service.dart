@@ -35,7 +35,6 @@ class ApiService {
     if (requireAuth && _accessToken != null) {
       headers['Authorization'] = 'Bearer $_accessToken';
     }
-    
     return headers;
   }
 
