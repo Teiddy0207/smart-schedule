@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../services/group_service.dart';
 
 class CreateGroup extends StatefulWidget {
   const CreateGroup({super.key});
@@ -10,6 +13,8 @@ class CreateGroup extends StatefulWidget {
 class _CreateGroupState extends State<CreateGroup> {
   final TextEditingController _groupNameController = TextEditingController();
   final TextEditingController _groupDescriptionController = TextEditingController();
+  bool _isLoading = false;
+  String? _errorMessage;
   
   // fake data
   List<Map<String, String>> _members = [
@@ -56,6 +61,48 @@ class _CreateGroupState extends State<CreateGroup> {
         ],
       ),
     );
+  }
+
+  Future<void> _createGroup() async {
+    // Validate input
+    if (_groupNameController.text.trim().isEmpty) {
+      setState(() {
+        _errorMessage = 'Vui lòng nhập tên nhóm';
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      
+      final response = await GroupService.createGroup(
+        authProvider: authProvider,
+        name: _groupNameController.text.trim(),
+        description: _groupDescriptionController.text.trim(),
+      );
+
+      if (mounted) {
+        Navigator.pop(context, response.group);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Tạo nhóm thành công!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString().replaceFirst('Exception: ', '');
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -212,28 +259,35 @@ class _CreateGroupState extends State<CreateGroup> {
             
             const SizedBox(height: 24),
             
+            // Hiển thị lỗi nếu có
+            if (_errorMessage != null)
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red[300]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.error_outline, color: Colors.red[700], size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _errorMessage!,
+                        style: TextStyle(color: Colors.red[700], fontSize: 14),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            
             // Nút Tạo Nhóm
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  // TODO: Implement logic tạo nhóm
-                  if (_groupNameController.text.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Vui lòng nhập tên nhóm'),
-                      ),
-                    );
-                    return;
-                  }
-                  // Xử lý tạo nhóm ở đây
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Tạo nhóm thành công!'),
-                    ),
-                  );
-                },
+                onPressed: _isLoading ? null : _createGroup,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2196F3),
                   foregroundColor: Colors.white,
@@ -242,14 +296,24 @@ class _CreateGroupState extends State<CreateGroup> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   elevation: 2,
+                  disabledBackgroundColor: Colors.grey[300],
                 ),
-                child: const Text(
-                  'Tạo Nhóm',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Text(
+                        'Tạo Nhóm',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
             ),
           ],

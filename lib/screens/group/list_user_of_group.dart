@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../services/group_service.dart';
+import '../../models/group/group_model.dart';
 
-class ListUserOfGroup extends StatelessWidget {
+class ListUserOfGroup extends StatefulWidget {
   final String groupName;
-  final String groupId; // Có thể dùng để fetch data từ API sau này
+  final String groupId;
 
   const ListUserOfGroup({
     super.key,
@@ -10,60 +14,58 @@ class ListUserOfGroup extends StatelessWidget {
     required this.groupId,
   });
 
-  // Fake data - danh sách user trong nhóm
-  List<Map<String, dynamic>> _getUsersForGroup(String groupId) {
-    // Dựa vào groupId, trả về danh sách user tương ứng
-    // Hiện tại dùng fake data
-    // Có thể mở rộng để trả về dữ liệu khác nhau cho từng nhóm
-    switch (groupId) {
-      case 'service-part':
-        return [
-          {
-            'name': 'Airbender',
-            'email': 'nvquang176@gmai.com',
-            'isAdmin': true,
-            'isMe': true,
-          },
-          {
-            'name': 'Quang SDS',
-            'email': 'nvquang176@gmai.com',
-            'isAdmin': false,
-            'isMe': false,
-          },
-          {
-            'name': 'Quang SDS',
-            'email': 'nvquang176@gmai.com',
-            'isAdmin': false,
-            'isMe': false,
-          },
-          {
-            'name': 'Quang SDS',
-            'email': 'nvquang176@gmai.com',
-            'isAdmin': false,
-            'isMe': false,
-          },
-        ];
-      default:
-        return [
-          {
-            'name': 'User 1',
-            'email': 'user1@example.com',
-            'isAdmin': false,
-            'isMe': true,
-          },
-          {
-            'name': 'User 2',
-            'email': 'user2@example.com',
-            'isAdmin': false,
-            'isMe': false,
-          },
-        ];
+  @override
+  State<ListUserOfGroup> createState() => _ListUserOfGroupState();
+}
+
+class _ListUserOfGroupState extends State<ListUserOfGroup> {
+  bool _isLoading = true;
+  String? _errorMessage;
+  GetUsersByGroupIdResponse? _response;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUsers();
+  }
+
+  Future<void> _loadUsers() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      
+      final response = await GroupService.getUsersByGroupId(
+        authProvider: authProvider,
+        groupId: widget.groupId,
+      );
+
+      if (mounted) {
+        setState(() {
+          _response = response;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString().replaceFirst('Exception: ', '');
+          _isLoading = false;
+        });
+      }
     }
+  }
+
+  bool _isCurrentUser(String userId) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    return authProvider.currentUser?.id == userId;
   }
 
   @override
   Widget build(BuildContext context) {
-    final users = _getUsersForGroup(groupId);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5), // Màu nền xám nhạt
@@ -90,9 +92,9 @@ class ListUserOfGroup extends StatelessWidget {
             Navigator.pop(context);
           },
         ),
-        title: const Text(
-          'List User Of Group',
-          style: TextStyle(
+        title: Text(
+          widget.groupName,
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
             fontSize: 18,
@@ -101,120 +103,80 @@ class ListUserOfGroup extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(
-              Icons.search,
+              Icons.refresh,
               color: Colors.white,
             ),
-            onPressed: () {
-              // TODO: Implement search
-            },
-          ),
-          IconButton(
-            icon: const Icon(
-              Icons.group,
-              color: Colors.white,
-            ),
-            onPressed: () {
-              // TODO: Implement group actions
-            },
+            onPressed: _loadUsers,
+            tooltip: 'Làm mới',
           ),
         ],
       ),
-      body: Container(
-        margin: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            // Header bar với tên nhóm
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF9C88FF), // tím nhạt
-                    Color(0xFF7C3AED), // tím đậm
-                  ],
-                ),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  topRight: Radius.circular(12),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.event_available,
-                      color: Colors.white,
-                      size: 20,
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _errorMessage != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                        const SizedBox(height: 16),
+                        Text(
+                          _errorMessage!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 16, color: Colors.red),
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton(
+                          onPressed: _loadUsers,
+                          child: const Text('Thử lại'),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Text(
-                    groupName,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                )
+              : _response == null || _response!.users.isEmpty
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(32.0),
+                        child: Text(
+                          'Chưa có thành viên nào trong nhóm',
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    )
+                  : Container(
+                      margin: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _response!.users.length,
+                        itemBuilder: (context, index) {
+                          final groupUser = _response!.users[index];
+                          final isMe = _isCurrentUser(groupUser.userId);
+                          return _buildUserCard(
+                            name: groupUser.user.providerName,
+                            email: groupUser.user.providerEmail,
+                            isAdmin: false, // TODO: Add admin field if backend provides
+                            isMe: isMe,
+                          );
+                        },
+                      ),
                     ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.search,
-                      color: Colors.white,
-                    ),
-                    onPressed: () {
-                      // TODO: Implement search
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.group,
-                      color: Colors.white,
-                    ),
-                    onPressed: () {
-                      // TODO: Implement group actions
-                    },
-                  ),
-                ],
-              ),
-            ),
-            // Danh sách user
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: users.length,
-                itemBuilder: (context, index) {
-                  final user = users[index];
-                  return _buildUserCard(
-                    name: user['name'] as String,
-                    email: user['email'] as String,
-                    isAdmin: user['isAdmin'] as bool,
-                    isMe: user['isMe'] as bool,
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
