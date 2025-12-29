@@ -283,7 +283,46 @@ class GroupService {
       }
 
       final responseData = jsonDecode(response.body) as Map<String, dynamic>;
-      final data = responseData['data'] as Map<String, dynamic>;
+      
+      // Xử lý response có thể có 'data' hoặc không
+      Map<String, dynamic> data;
+      if (responseData.containsKey('data') && responseData['data'] != null) {
+        if (responseData['data'] is! Map<String, dynamic>) {
+          throw Exception('Field "data" không phải là object. Nhận được: ${responseData['data'].runtimeType}');
+        }
+        data = responseData['data'] as Map<String, dynamic>;
+      } else {
+        // Nếu không có 'data', thử dùng trực tiếp responseData
+        data = responseData;
+      }
+      
+      // Kiểm tra các field bắt buộc
+      if (!data.containsKey('group_id') || data['group_id'] == null) {
+        throw Exception('Response không chứa group_id. Cấu trúc: ${response.body}');
+      }
+      
+      // Nếu không có 'group' trong response, tạo một group object từ group_id
+      if (!data.containsKey('group') || data['group'] == null) {
+        print('⚠ Response không có field "group", tạo group object từ group_id');
+        data['group'] = {
+          'id': data['group_id'].toString(),
+          'name': '', // Sẽ được set sau nếu có
+          'description': '',
+        };
+      }
+      
+      if (data['group'] is! Map<String, dynamic>) {
+        throw Exception('Field "group" không phải là object. Nhận được: ${data['group'].runtimeType}');
+      }
+      
+      // users có thể là null hoặc empty list
+      if (!data.containsKey('users')) {
+        data['users'] = [];
+      }
+      
+      if (data['users'] != null && data['users'] is! List) {
+        throw Exception('Field "users" không phải là list. Nhận được: ${data['users'].runtimeType}');
+      }
       
       return GetUsersByGroupIdResponse.fromJson(data);
     } on http.ClientException catch (e) {

@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'list_user_of_group.dart';
+import 'group_detail_screen.dart';
 import '../../constants/app_constants.dart';
 import '../../services/group_service.dart';
 import '../../models/group/group_model.dart';
 import '../../providers/auth_provider.dart';
 
 class GroupScreenContent extends StatefulWidget {
-  const GroupScreenContent({super.key});
+  const GroupScreenContent({super.key, this.refreshTrigger});
+
+  final int? refreshTrigger; // Thay đổi giá trị này sẽ trigger refresh
 
   @override
   State<GroupScreenContent> createState() => _GroupScreenContentState();
@@ -25,6 +28,20 @@ class _GroupScreenContentState extends State<GroupScreenContent> {
     _loadGroups();
   }
 
+  @override
+  void didUpdateWidget(GroupScreenContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Nếu refreshTrigger thay đổi, refresh lại danh sách
+    if (widget.refreshTrigger != oldWidget.refreshTrigger) {
+      _loadGroups();
+    }
+  }
+
+  // Refresh khi màn hình được hiển thị lại (ví dụ: sau khi tạo nhóm mới)
+  void refreshGroups() {
+    _loadGroups();
+  }
+
   Future<void> _loadGroups() async {
     setState(() {
       _isLoading = true;
@@ -35,6 +52,9 @@ class _GroupScreenContentState extends State<GroupScreenContent> {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final currentUserId = authProvider.currentUser?.id;
       
+      print('=== Load Groups ===');
+      print('Current User ID: $currentUserId');
+      
       if (currentUserId == null || currentUserId.isEmpty) {
         throw Exception('Không thể xác định user hiện tại. Vui lòng đăng nhập lại.');
       }
@@ -43,8 +63,13 @@ class _GroupScreenContentState extends State<GroupScreenContent> {
         authProvider: authProvider,
       );
 
-      // Lọc chỉ các nhóm mà user hiện tại đã tham gia hoặc đã tạo
-      final filteredGroups = <Group>[];
+      print('Total groups from API: ${allGroups.length}');
+      for (final group in allGroups) {
+        print('  - Group: ${group.name} (ID: ${group.id})');
+      }
+
+      // API getMyGroups() đã filter theo user hiện tại rồi, nên không cần filter lại
+      // Chỉ cần lấy số lượng thành viên cho mỗi nhóm
       final memberCounts = <String, int>{};
       
       for (final group in allGroups) {
@@ -54,30 +79,46 @@ class _GroupScreenContentState extends State<GroupScreenContent> {
             groupId: group.id,
           );
           
-          // Kiểm tra xem user hiện tại có trong danh sách users của nhóm không
-          final isMember = usersResponse.users.any(
-            (groupUser) => groupUser.userId == currentUserId,
-          );
+          // Lưu số lượng thành viên
+          final userCount = usersResponse.users.length;
+          memberCounts[group.id] = userCount;
           
-          if (isMember) {
-            // User là thành viên của nhóm này, thêm vào danh sách
-            filteredGroups.add(group);
-            memberCounts[group.id] = usersResponse.users.length;
+          print('Group ${group.name} (ID: ${group.id}) has $userCount users');
+          if (userCount > 0) {
+            for (final user in usersResponse.users) {
+              print('  - User ID: ${user.userId}, Name: ${user.user.providerName}');
+            }
+          } else {
+            print('  - No users found in group (có thể là nhóm mới tạo)');
+            // Nếu không có users, giả định ít nhất có 1 thành viên (người tạo)
+            memberCounts[group.id] = 1;
           }
         } catch (e) {
-          // Nếu không lấy được danh sách users, bỏ qua nhóm này
-          print('Không thể lấy danh sách users cho nhóm ${group.id}: $e');
+          // Nếu không lấy được danh sách users, vẫn thêm nhóm vào danh sách
+          // vì có thể nhóm mới tạo chưa có user trong danh sách ngay
+          print('⚠ Không thể lấy danh sách users cho nhóm ${group.id}: $e');
+          print('Vẫn thêm nhóm ${group.name} vào danh sách với số thành viên mặc định = 1');
+          // Nếu không lấy được, giả định ít nhất có 1 thành viên (người tạo)
+          memberCounts[group.id] = 1;
         }
       }
 
+      print('Total groups to display: ${allGroups.length}');
+      print('Member counts map:');
+      memberCounts.forEach((groupId, count) {
+        print('  - Group ID: $groupId -> $count members');
+      });
+
       if (mounted) {
         setState(() {
-          _groups = filteredGroups;
+          _groups = allGroups; // Hiển thị tất cả nhóm từ API (đã được filter rồi)
           _memberCounts = memberCounts;
           _isLoading = false;
         });
+        print('State updated. Groups: ${_groups.length}, MemberCounts: ${_memberCounts.length}');
       }
     } catch (e) {
+      print('Error loading groups: $e');
       if (mounted) {
         setState(() {
           _errorMessage = e.toString().replaceFirst('Exception: ', '');
@@ -145,7 +186,11 @@ class _GroupScreenContentState extends State<GroupScreenContent> {
         itemCount: _groups.length,
         itemBuilder: (context, index) {
           final group = _groups[index];
-          final memberCount = _memberCounts[group.id] ?? 0;
+          final memberCount = _memberCounts[group.id] ?? 1; // Mặc định ít nhất 1 (người tạo)
+          print('Building card for group ${group.name} (ID: ${group.id})');
+          print('  MemberCounts map contains key ${group.id}? ${_memberCounts.containsKey(group.id)}');
+          print('  Value from map: ${_memberCounts[group.id]}');
+          print('  Final memberCount to display: $memberCount');
           return _buildGroupCard(
             context: context,
             name: group.name,
@@ -168,7 +213,7 @@ class _GroupScreenContentState extends State<GroupScreenContent> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ListUserOfGroup(
+            builder: (context) => GroupDetailScreen(
               groupName: name,
               groupId: groupId,
             ),
