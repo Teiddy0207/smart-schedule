@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/group_service.dart';
 import 'list_user_of_group.dart';
+import 'add_user_to_group.dart';
 
 class CreateGroup extends StatefulWidget {
   const CreateGroup({super.key});
@@ -33,22 +34,35 @@ class _CreateGroupState extends State<CreateGroup> {
     });
   }
 
-  void _addMember() {
-    // TODO: Implement thêm thành viên
-    // Có thể mở dialog hoặc màn hình tìm kiếm thành viên
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Thêm Thành viên'),
-        content: const Text('Tính năng thêm thành viên sẽ được triển khai sau.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Đóng'),
-          ),
-        ],
+  Future<void> _addMember() async {
+    // Mở màn hình tìm kiếm và thêm thành viên
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddUserToGroup(
+          existingMembers: _members,
+        ),
       ),
     );
+
+    // Nếu có kết quả (user đã chọn), thêm vào danh sách
+    if (result != null && result is Map<String, String>) {
+      setState(() {
+        // Kiểm tra xem user đã có trong danh sách chưa
+        final email = result['email']?.toLowerCase();
+        final isDuplicate = _members.any(
+          (member) => member['email']?.toLowerCase() == email,
+        );
+        
+        if (!isDuplicate) {
+          _members.add({
+            'id': result['id'] ?? '',
+            'name': result['name'] ?? '',
+            'email': result['email'] ?? '',
+          });
+        }
+      });
+    }
   }
 
   Future<void> _createGroup() async {
@@ -88,8 +102,8 @@ class _CreateGroupState extends State<CreateGroup> {
             ),
           );
         } else {
-          // Không có ID (backend không trả về), chỉ pop về màn hình trước
-          Navigator.pop(context);
+          // Không có ID (backend không trả về), pop về màn hình trước với result để trigger refresh
+          Navigator.pop(context, true); // true = đã tạo nhóm thành công
         }
         
         ScaffoldMessenger.of(context).showSnackBar(
@@ -220,7 +234,7 @@ class _CreateGroupState extends State<CreateGroup> {
                   icon: const Icon(Icons.add, size: 20),
                   label: const Text('Thêm Thành viên'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF90CAF9), // Màu xanh nhạt
+                    backgroundColor: const Color(0xFF2196F3), // Màu xanh dương giống nút Tạo Nhóm
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -229,7 +243,7 @@ class _CreateGroupState extends State<CreateGroup> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    elevation: 0,
+                    elevation: 2,
                   ),
                 ),
               ],

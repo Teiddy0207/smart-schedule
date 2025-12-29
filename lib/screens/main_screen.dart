@@ -18,12 +18,13 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
+  int _groupRefreshTrigger = 0; // Trigger để refresh GroupScreenContent
 
   // Danh sách các body tương ứng - THỨ TỰ GIỐNG BOTTOM NAV
-  late final List<Widget> _screens = [
+  List<Widget> get _screens => [
     const DashboardScreenContent(),   // Trang chủ
     const CalendarScreenContent(),    // Lịch
-    GroupScreenContent(),             // Nhóm (StatefulWidget không thể const trong list)
+    GroupScreenContent(refreshTrigger: _groupRefreshTrigger), // Nhóm
     const ProfileScreenContent(),     // Cá nhân
   ];
 
@@ -211,13 +212,19 @@ class _MainScreenState extends State<MainScreen> {
                         backgroundColor: Colors.white24,
                         child: IconButton(
                           icon: const Icon(Icons.add, color: Colors.white),
-                          onPressed: () {
-                            Navigator.push(
+                          onPressed: () async {
+                            final result = await Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (context) => const CreateGroup(),
                               ),
                             );
+                            // Nếu tạo nhóm thành công (result = true), refresh màn hình group
+                            if (result == true) {
+                              setState(() {
+                                _groupRefreshTrigger++; // Tăng trigger để refresh
+                              });
+                            }
                           },
                         ),
                       ),

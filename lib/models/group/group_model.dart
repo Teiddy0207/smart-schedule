@@ -135,12 +135,38 @@ class GetUsersByGroupIdResponse {
   });
 
   factory GetUsersByGroupIdResponse.fromJson(Map<String, dynamic> json) {
+    // Xử lý group_id
+    final groupId = json['group_id']?.toString() ?? '';
+    if (groupId.isEmpty) {
+      throw Exception('group_id không được để trống');
+    }
+    
+    // Xử lý group
+    if (json['group'] == null) {
+      throw Exception('Field "group" không được null');
+    }
+    
+    if (json['group'] is! Map<String, dynamic>) {
+      throw Exception('Field "group" phải là Map<String, dynamic>. Nhận được: ${json['group'].runtimeType}');
+    }
+    
+    // Xử lý users - có thể null hoặc empty
+    List<GroupUser> users = [];
+    if (json['users'] != null) {
+      if (json['users'] is List) {
+        users = (json['users'] as List<dynamic>)
+            .where((e) => e != null && e is Map<String, dynamic>)
+            .map((e) => GroupUser.fromJson(e as Map<String, dynamic>))
+            .toList();
+      } else {
+        throw Exception('Field "users" phải là List. Nhận được: ${json['users'].runtimeType}');
+      }
+    }
+    
     return GetUsersByGroupIdResponse(
-      groupId: json['group_id'] as String,
+      groupId: groupId,
       group: Group.fromJson(json['group'] as Map<String, dynamic>),
-      users: (json['users'] as List<dynamic>)
-          .map((e) => GroupUser.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      users: users,
     );
   }
 }
