@@ -324,8 +324,9 @@ class _DailyScheduleWidgetState extends State<DailyScheduleWidget> {
             child: Text(
               time,
               style: const TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
               ),
               textAlign: TextAlign.right,
             ),
