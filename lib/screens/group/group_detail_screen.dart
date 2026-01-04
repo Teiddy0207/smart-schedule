@@ -4,6 +4,7 @@ import '../../providers/auth_provider.dart';
 import '../../services/group_service.dart';
 import '../../models/group/group_model.dart';
 import '../../constants/app_constants.dart';
+import 'user_busy_bottom_sheet.dart';
 
 class GroupDetailScreen extends StatefulWidget {
   final String groupId;
@@ -322,10 +323,16 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                       else
                         ..._response!.users.map((groupUser) {
                           final isMe = _isCurrentUser(groupUser.userId);
-                          return _buildUserCard(
-                            name: groupUser.user.providerName,
-                            email: groupUser.user.providerEmail,
-                            isMe: isMe,
+                          return InkWell(
+                            onTap: () {
+                              _openUserBusy(groupUser.userId, groupUser.user.providerName);
+                            },
+                            borderRadius: BorderRadius.circular(12),
+                            child: _buildUserCard(
+                              name: groupUser.user.providerName,
+                              email: groupUser.user.providerEmail,
+                              isMe: isMe,
+                            ),
                           );
                         }),
                       
@@ -423,6 +430,18 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _openUserBusy(String userId, String userName) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => GroupUserBusyBottomSheet(
+        userId: userId,
+        userName: userName,
       ),
     );
   }
