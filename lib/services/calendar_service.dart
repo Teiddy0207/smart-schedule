@@ -38,6 +38,16 @@ class CalendarService {
     return await ApiService.get('$_basePath/free-busy?$queryParams');
   }
 
+  static Future<Map<String, dynamic>> getUserBusy({
+    required String userId,
+    required String startTime,
+    required String endTime,
+  }) async {
+    AppLogger.info('Getting user busy info', tag: _tag);
+    final path = '/api/v1/private/users/$userId/calendar/busy?start_time=$startTime&end_time=$endTime';
+    return await ApiService.get(path);
+  }
+
   /// Create a calendar event
   /// POST /api/v1/private/calendar/events
   static Future<Map<String, dynamic>> createEvent({
