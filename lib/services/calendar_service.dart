@@ -38,6 +38,16 @@ class CalendarService {
     return await ApiService.get('$_basePath/free-busy?$queryParams');
   }
 
+  static Future<Map<String, dynamic>> getUserBusy({
+    required String userId,
+    required String startTime,
+    required String endTime,
+  }) async {
+    AppLogger.info('Getting user busy info', tag: _tag);
+    final path = '/api/v1/private/users/$userId/calendar/busy?start_time=$startTime&end_time=$endTime';
+    return await ApiService.get(path);
+  }
+
   /// Create a calendar event
   /// POST /api/v1/private/calendar/events
   static Future<Map<String, dynamic>> createEvent({
@@ -63,5 +73,22 @@ class CalendarService {
     if (meetingLink != null) body['meeting_link'] = meetingLink;
 
     return await ApiService.post('$_basePath/events', body: body);
+  }
+
+  /// Get calendar events from Google Calendar
+  /// GET /api/v1/private/calendar/events
+  static Future<Map<String, dynamic>> getEvents({
+    required String startTime,
+    required String endTime,
+    int? maxResults,
+  }) async {
+    AppLogger.info('Getting calendar events', tag: _tag);
+
+    String queryParams = 'start_time=$startTime&end_time=$endTime';
+    if (maxResults != null) {
+      queryParams += '&max_results=$maxResults';
+    }
+
+    return await ApiService.get('$_basePath/events?$queryParams');
   }
 }

@@ -17,6 +17,7 @@ class GoogleAuthService {
       'email',
       'profile',
       'https://www.googleapis.com/auth/calendar.readonly', // Để đọc Google Calendar
+      'https://www.googleapis.com/auth/calendar.events', // Để tạo/sửa events
     ],
     serverClientId: _serverClientId, // For backend token verification
   );

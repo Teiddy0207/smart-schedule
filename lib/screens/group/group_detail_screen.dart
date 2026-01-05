@@ -670,5 +670,17 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
       ),
     );
   }
+
+  void _openUserBusy(String userId, String userName) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => GroupUserBusyBottomSheet(
+        userId: userId,
+        userName: userName,
+      ),
+    );
+  }
 }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../widgets/user_search_widget.dart';
 import '../../services/user_search_service.dart';
+import '../../services/api_service.dart';
 import 'suggested_slots_screen.dart';
 
 class CreateEventScreen extends StatefulWidget {
@@ -47,6 +48,11 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     'Giờ hành chính': false,
     'Cuối tuần': false,
   };
+
+  // Date/Time for events without participants
+  DateTime? _selectedDate;
+  TimeOfDay? _selectedStartTime;
+  TimeOfDay? _selectedEndTime;
 
   @override
   void dispose() {
@@ -248,6 +254,51 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           ),
           const SizedBox(height: 20),
 
+          // Date/Time section - only show when no participants
+          if (_selectedParticipants.isEmpty) ...[
+            const Text(
+              'Thời gian sự kiện',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+                fontFamily: 'Lexend',
+              ),
+            ),
+            const SizedBox(height: 12),
+            _buildDateTimePickers(),
+            const SizedBox(height: 20),
+          ],
+
+          // Hint for Smart Scheduler when has participants
+          if (_selectedParticipants.isNotEmpty) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: _primaryColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _primaryColor.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.auto_awesome, color: _primaryColor, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Bấm "Đề xuất" để tìm thời gian phù hợp với ${_selectedParticipants.length} người tham dự',
+                      style: TextStyle(
+                        color: _primaryColor,
+                        fontSize: 13,
+                        fontFamily: 'Lexend',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+
           // URL
           _buildTextField(
             controller: _urlController,
@@ -412,6 +463,187 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     );
   }
 
+  Widget _buildDateTimePickers() {
+    return Column(
+      children: [
+        // Date picker
+        InkWell(
+          onTap: () async {
+            final date = await showDatePicker(
+              context: context,
+              initialDate: _selectedDate ?? DateTime.now(),
+              firstDate: DateTime.now(),
+              lastDate: DateTime.now().add(const Duration(days: 365)),
+              builder: (context, child) {
+                return Theme(
+                  data: Theme.of(context).copyWith(
+                    colorScheme: const ColorScheme.light(
+                      primary: _primaryColor,
+                    ),
+                  ),
+                  child: child!,
+                );
+              },
+            );
+            if (date != null) {
+              setState(() => _selectedDate = date);
+            }
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5F6F8),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.calendar_today, color: _primaryColor, size: 22),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _selectedDate != null
+                        ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
+                        : 'Chọn ngày...',
+                    style: TextStyle(
+                      color: _selectedDate != null ? Colors.black87 : Colors.grey[400],
+                      fontSize: 16,
+                      fontFamily: 'Lexend',
+                    ),
+                  ),
+                ),
+                Icon(Icons.arrow_drop_down, color: Colors.grey[600]),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Time pickers row
+        Row(
+          children: [
+            // Start time
+            Expanded(
+              child: InkWell(
+                onTap: () async {
+                  final time = await showTimePicker(
+                    context: context,
+                    initialTime: _selectedStartTime ?? TimeOfDay.now(),
+                    builder: (context, child) {
+                      return Theme(
+                        data: Theme.of(context).copyWith(
+                          colorScheme: const ColorScheme.light(
+                            primary: _primaryColor,
+                          ),
+                        ),
+                        child: child!,
+                      );
+                    },
+                  );
+                  if (time != null) {
+                    setState(() {
+                      _selectedStartTime = time;
+                      // Auto set end time based on duration
+                      if (_selectedEndTime == null) {
+                        int durationMinutes = 60;
+                        if (_selectedDuration.contains('30')) durationMinutes = 30;
+                        else if (_selectedDuration.contains('1.5')) durationMinutes = 90;
+                        else if (_selectedDuration.contains('2')) durationMinutes = 120;
+                        else if (_selectedDuration.contains('3')) durationMinutes = 180;
+                        
+                        final endMinutes = time.hour * 60 + time.minute + durationMinutes;
+                        _selectedEndTime = TimeOfDay(
+                          hour: (endMinutes ~/ 60) % 24,
+                          minute: endMinutes % 60,
+                        );
+                      }
+                    });
+                  }
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F6F8),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.access_time, color: _primaryColor, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        _selectedStartTime != null
+                            ? '${_selectedStartTime!.hour.toString().padLeft(2, '0')}:${_selectedStartTime!.minute.toString().padLeft(2, '0')}'
+                            : 'Bắt đầu',
+                        style: TextStyle(
+                          color: _selectedStartTime != null ? Colors.black87 : Colors.grey[400],
+                          fontSize: 15,
+                          fontFamily: 'Lexend',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8),
+              child: Icon(Icons.arrow_forward, color: Colors.grey, size: 20),
+            ),
+            // End time
+            Expanded(
+              child: InkWell(
+                onTap: () async {
+                  final time = await showTimePicker(
+                    context: context,
+                    initialTime: _selectedEndTime ?? TimeOfDay.now(),
+                    builder: (context, child) {
+                      return Theme(
+                        data: Theme.of(context).copyWith(
+                          colorScheme: const ColorScheme.light(
+                            primary: _primaryColor,
+                          ),
+                        ),
+                        child: child!,
+                      );
+                    },
+                  );
+                  if (time != null) {
+                    setState(() => _selectedEndTime = time);
+                  }
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F6F8),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.access_time_filled, color: _primaryColor, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        _selectedEndTime != null
+                            ? '${_selectedEndTime!.hour.toString().padLeft(2, '0')}:${_selectedEndTime!.minute.toString().padLeft(2, '0')}'
+                            : 'Kết thúc',
+                        style: TextStyle(
+                          color: _selectedEndTime != null ? Colors.black87 : Colors.grey[400],
+                          fontSize: 15,
+                          fontFamily: 'Lexend',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _buildTimeOptionsCard() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -534,9 +766,15 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   void _handleSuggestSchedule() async {
     if (_titleController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vui lòng nhập tiêu đề cuộc họp'),
+        SnackBar(
+          content: const Text('Vui lòng nhập tiêu đề cuộc họp'),
           backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.only(
+            bottom: MediaQuery.of(context).size.height - 250,
+            left: 16,
+            right: 16,
+          ),
         ),
       );
       return;
@@ -568,42 +806,178 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
 
     // Handle returned slot
     if (selectedSlot != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Đã chọn: ${selectedSlot.dayOfWeek} ${selectedSlot.formattedDate} ${selectedSlot.formattedTime}'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      // Call API to create event with selected slot
+      try {
+        final eventData = {
+          'title': _titleController.text,
+          'description': _notesController.text,
+          'address': _locationController.text,
+          'start_date': selectedSlot.startTime.toUtc().toIso8601String(),
+          'end_date': selectedSlot.endTime.toUtc().toIso8601String(),
+          'meeting_link': _urlController.text,
+        };
+
+        debugPrint('Creating event with slot: $eventData');
+
+        final response = await ApiService.post(
+          '/api/v1/private/events/personal',
+          body: eventData,
+        );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Đã tạo sự kiện: ${selectedSlot.dayOfWeek} ${selectedSlot.formattedDate} ${selectedSlot.formattedTime}'),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.only(
+                bottom: MediaQuery.of(context).size.height - 250,
+                left: 16,
+                right: 16,
+              ),
+            ),
+          );
+          Navigator.pop(context); // Close create event screen
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Lỗi: ${e.toString().replaceFirst("Exception: ", "")}'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.only(
+                bottom: MediaQuery.of(context).size.height - 250,
+                left: 16,
+                right: 16,
+              ),
+            ),
+          );
+        }
+      }
     }
   }
 
-  void _handleAddEvent() {
+  void _handleAddEvent() async {
     if (_formKey.currentState!.validate()) {
-      // Collect event data
-      final eventData = {
-        'title': _titleController.text,
-        'location': _locationController.text,
-        'duration': _selectedDuration,
-        'priority': _selectedPriority,
-        'group': _groupController.text,
-        'participants': _selectedParticipants.map((u) => u.email).toList(),
-        'participant_ids': _selectedParticipants.map((u) => u.id).toList(),
-        'url': _urlController.text,
-        'notes': _notesController.text,
-        'timeOptions': _timeOptions,
-      };
+      // Two-flow logic
+      if (_selectedParticipants.isEmpty) {
+        // Flow 1: No participants - require date/time
+        if (_selectedDate == null || _selectedStartTime == null || _selectedEndTime == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Vui lòng chọn ngày và giờ cho sự kiện'),
+              backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.only(
+                bottom: MediaQuery.of(context).size.height - 250,
+                left: 16,
+                right: 16,
+              ),
+            ),
+          );
+          return;
+        }
 
-      // TODO: Call API to create event
-      debugPrint('Creating event: $eventData');
+        // Create DateTime from selected values
+        final startDateTime = DateTime(
+          _selectedDate!.year,
+          _selectedDate!.month,
+          _selectedDate!.day,
+          _selectedStartTime!.hour,
+          _selectedStartTime!.minute,
+        );
+        final endDateTime = DateTime(
+          _selectedDate!.year,
+          _selectedDate!.month,
+          _selectedDate!.day,
+          _selectedEndTime!.hour,
+          _selectedEndTime!.minute,
+        );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Sự kiện đã được tạo thành công!'),
-          backgroundColor: Colors.green,
-        ),
-      );
+        // Validate end time is after start time
+        if (endDateTime.isBefore(startDateTime) || endDateTime.isAtSameMomentAs(startDateTime)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Thời gian kết thúc phải sau thời gian bắt đầu'),
+              backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.only(
+                bottom: MediaQuery.of(context).size.height - 250,
+                left: 16,
+                right: 16,
+              ),
+            ),
+          );
+          return;
+        }
 
-      Navigator.pop(context);
+        // Collect event data with specific time
+        final eventData = {
+          'title': _titleController.text,
+          'description': _notesController.text,
+          'address': _locationController.text,
+          'start_date': startDateTime.toUtc().toIso8601String(),
+          'end_date': endDateTime.toUtc().toIso8601String(),
+          'meeting_link': _urlController.text,
+        };
+
+        debugPrint('=== Creating Personal Event ===');
+        debugPrint('eventData: $eventData');
+
+        // Call API to create personal event
+        try {
+          final response = await ApiService.post(
+            '/api/v1/private/events/personal',
+            body: eventData,
+          );
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Sự kiện đã được tạo thành công!'),
+                backgroundColor: Colors.green,
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).size.height - 250,
+                  left: 16,
+                  right: 16,
+                ),
+              ),
+            );
+            Navigator.pop(context);
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Lỗi: ${e.toString().replaceFirst("Exception: ", "")}'),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).size.height - 250,
+                  left: 16,
+                  right: 16,
+                ),
+              ),
+            );
+          }
+        }
+      } else {
+        // Flow 2: Has participants - redirect to Smart Scheduler
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Bấm nút "Đề xuất" để tìm thời gian phù hợp với ${_selectedParticipants.length} người tham dự'),
+            backgroundColor: _primaryColor,
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.only(
+              bottom: MediaQuery.of(context).size.height - 250,
+              left: 16,
+              right: 16,
+            ),
+          ),
+        );
+      }
     }
   }
 }
