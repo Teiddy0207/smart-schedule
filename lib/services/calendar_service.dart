@@ -74,4 +74,21 @@ class CalendarService {
 
     return await ApiService.post('$_basePath/events', body: body);
   }
+
+  /// Get calendar events from Google Calendar
+  /// GET /api/v1/private/calendar/events
+  static Future<Map<String, dynamic>> getEvents({
+    required String startTime,
+    required String endTime,
+    int? maxResults,
+  }) async {
+    AppLogger.info('Getting calendar events', tag: _tag);
+
+    String queryParams = 'start_time=$startTime&end_time=$endTime';
+    if (maxResults != null) {
+      queryParams += '&max_results=$maxResults';
+    }
+
+    return await ApiService.get('$_basePath/events?$queryParams');
+  }
 }
