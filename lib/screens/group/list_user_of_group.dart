@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/group_service.dart';
 import '../../models/group/group_model.dart';
-import 'user_busy_bottom_sheet.dart';
 
 class ListUserOfGroup extends StatefulWidget {
   final String groupName;
@@ -169,17 +168,11 @@ class _ListUserOfGroupState extends State<ListUserOfGroup> {
                         itemBuilder: (context, index) {
                           final groupUser = _response!.users[index];
                           final isMe = _isCurrentUser(groupUser.userId);
-                          return InkWell(
-                            onTap: () {
-                              _openUserBusy(groupUser.userId, groupUser.user.providerName);
-                            },
-                            borderRadius: BorderRadius.circular(12),
-                            child: _buildUserCard(
-                              name: groupUser.user.providerName,
-                              email: groupUser.user.providerEmail,
-                              isAdmin: false,
-                              isMe: isMe,
-                            ),
+                          return _buildUserCard(
+                            name: groupUser.user.providerName,
+                            email: groupUser.user.providerEmail,
+                            isAdmin: false, // TODO: Add admin field if backend provides
+                            isMe: isMe,
                           );
                         },
                       ),
@@ -273,18 +266,6 @@ class _ListUserOfGroupState extends State<ListUserOfGroup> {
               ),
             ),
         ],
-      ),
-    );
-  }
-
-  void _openUserBusy(String userId, String userName) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => GroupUserBusyBottomSheet(
-        userId: userId,
-        userName: userName,
       ),
     );
   }

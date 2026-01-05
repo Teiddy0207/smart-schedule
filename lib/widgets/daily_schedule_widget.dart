@@ -24,21 +24,12 @@ class DailyScheduleWidget extends StatefulWidget {
 class _DailyScheduleWidgetState extends State<DailyScheduleWidget> {
   List<GoogleCalendarEvent> _events = [];
   bool _isLoading = true;
-  final ScrollController _scrollController = ScrollController();
-
-  // Height of each event card (approximate)
-  static const double _eventCardHeight = 130.0;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
     _loadEvents();
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
   }
 
   @override
@@ -57,68 +48,60 @@ class _DailyScheduleWidgetState extends State<DailyScheduleWidget> {
       _errorMessage = null;
     });
 
-    // Auto-scroll to the event closest to current time
-    if (events.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToClosestEvent();
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      
+      // Tính toán timeMin và timeMax cho ngày được chọn
+      final selectedDate = widget.selectedDate;
+      final startOfDay = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 0, 0, 0);
+      final endOfDay = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 23, 59, 59);
+      
+      final response = await GoogleCalendarService.getCalendarEvents(
+        authProvider: authProvider,
+        timeMin: startOfDay,
+        timeMax: endOfDay,
+        maxResults: 50,
+      );
+
+      if (!mounted) return;
+
+      if (response.error != null) {
+        setState(() {
+          _errorMessage = response.error;
+          _isLoading = false;
+        });
+      } else {
+        // Filter chỉ lấy events của ngày được chọn
+        final selectedYear = selectedDate.year;
+        final selectedMonth = selectedDate.month;
+        final selectedDay = selectedDate.day;
+        
+        final filteredEvents = response.events.where((event) {
+          if (event.start == null) return false;
+          final eventDate = event.start!.toLocal();
+          return eventDate.year == selectedYear &&
+                 eventDate.month == selectedMonth &&
+                 eventDate.day == selectedDay;
+        }).toList();
+        
+        setState(() {
+          _events = filteredEvents;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        _isLoading = false;
       });
     }
   }
 
-  /// Find and scroll to the event closest to current time
-  void _scrollToClosestEvent() {
-    if (_events.isEmpty || !_scrollController.hasClients) return;
-
-    final now = DateTime.now();
-    final currentMinutes = now.hour * 60 + now.minute;
-
-    int closestIndex = 0;
-    int? closestUpcomingDiff;
-    int? closestPastDiff;
-    int closestUpcomingIndex = 0;
-    int closestPastIndex = 0;
-
-    for (int i = 0; i < _events.length; i++) {
-      final event = _events[i];
-      final parts = event.startTime.split(':');
-      if (parts.length == 2) {
-        final eventMinutes = int.parse(parts[0]) * 60 + int.parse(parts[1]);
-        final diff = eventMinutes - currentMinutes;
-        
-        if (diff >= 0) {
-          // Upcoming event
-          if (closestUpcomingDiff == null || diff < closestUpcomingDiff) {
-            closestUpcomingDiff = diff;
-            closestUpcomingIndex = i;
-          }
-        } else {
-          // Past event
-          if (closestPastDiff == null || diff.abs() < closestPastDiff) {
-            closestPastDiff = diff.abs();
-            closestPastIndex = i;
-          }
-        }
-      }
-    }
-
-    // Prefer upcoming event, fallback to past event
-    if (closestUpcomingDiff != null) {
-      closestIndex = closestUpcomingIndex;
-    } else if (closestPastDiff != null) {
-      closestIndex = closestPastIndex;
-    }
-
-    // Calculate scroll offset
-    final offset = closestIndex * _eventCardHeight;
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    
-    _scrollController.animateTo(
-      offset.clamp(0.0, maxScroll),
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeInOut,
-    );
+  String _formatTime(DateTime? dateTime) {
+    if (dateTime == null) return '';
+    return DateFormat('HH:mm').format(dateTime.toLocal());
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -131,7 +114,7 @@ class _DailyScheduleWidgetState extends State<DailyScheduleWidget> {
             AppConstants.spacingL,
             AppConstants.spacingXXL,
             AppConstants.spacingL,
-            4, // Reduced spacing
+            AppConstants.spacingL,
           ),
           child: Row(
             children: [
@@ -179,7 +162,7 @@ class _DailyScheduleWidgetState extends State<DailyScheduleWidget> {
         const Padding(
           padding: EdgeInsets.fromLTRB(
             AppConstants.spacingL,
-            4, // Reduced spacing
+            AppConstants.spacingL,
             AppConstants.spacingL,
             AppConstants.spacingM,
           ),
@@ -195,21 +178,7 @@ class _DailyScheduleWidgetState extends State<DailyScheduleWidget> {
 
         // Timeline với events
         Expanded(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _events.isEmpty
-                  ? _buildEmptyState()
-                  : ListView.builder(
-                      controller: _scrollController,
-                      physics: const ClampingScrollPhysics(), // No overscroll effect
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppConstants.spacingL,
-                      ),
-                      itemCount: _events.length,
-                      itemBuilder: (context, index) {
-                        return _buildTimelineEvent(_events[index]);
-                      },
-                    ),
+          child: _buildEventsList(),
         ),
       ],
     );
@@ -344,7 +313,7 @@ class _DailyScheduleWidgetState extends State<DailyScheduleWidget> {
     );
   }
 
-  Widget _buildTimelineEvent(DailyEvent event) {
+  Widget _buildTimelineHour({required String time, required Widget child}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppConstants.spacingM),
       child: Row(
@@ -355,9 +324,8 @@ class _DailyScheduleWidgetState extends State<DailyScheduleWidget> {
             child: Text(
               time,
               style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                fontSize: 14,
+                color: Colors.grey,
               ),
               textAlign: TextAlign.right,
             ),
