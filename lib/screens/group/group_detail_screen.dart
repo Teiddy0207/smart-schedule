@@ -5,6 +5,7 @@ import '../../services/group_service.dart';
 import '../../services/user_search_service.dart';
 import '../../models/group/group_model.dart';
 import '../../constants/app_constants.dart';
+import 'add_user_to_group.dart';
 
 class GroupDetailScreen extends StatefulWidget {
   final String groupId;
@@ -154,6 +155,99 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
   bool _isCurrentUser(String userId) {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     return authProvider.currentUser?.id == userId;
+  }
+
+  Future<void> _addMember() async {
+    // Lấy danh sách thành viên hiện tại để truyền vào AddUserToGroup
+    final existingMembers = _response?.users.map((groupUser) {
+      return {
+        'id': groupUser.user.id,
+        'name': groupUser.user.providerName,
+        'email': groupUser.user.providerEmail,
+      };
+    }).toList() ?? [];
+
+    // Mở màn hình tìm kiếm và thêm thành viên
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddUserToGroup(
+          existingMembers: existingMembers,
+        ),
+      ),
+    );
+
+    // Nếu có kết quả (user đã chọn), thêm vào nhóm
+    if (result != null && result is Map<String, String>) {
+      final userId = result['id'];
+      if (userId == null || userId.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Không thể thêm thành viên: thiếu thông tin user ID'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Hiển thị loading
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
+      }
+
+      try {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        
+        // Gọi API thêm user vào nhóm
+        await GroupService.addUsersToGroup(
+          authProvider: authProvider,
+          groupId: widget.groupId,
+          userIds: [userId],
+        );
+
+        // Đóng loading dialog
+        if (mounted) {
+          Navigator.pop(context); // Đóng loading dialog
+        }
+
+        // Hiển thị thông báo thành công
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Đã thêm ${result['name'] ?? result['email'] ?? 'thành viên'} vào nhóm'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+
+        // Refresh lại danh sách thành viên
+        await _loadGroupDetails();
+      } catch (e) {
+        // Đóng loading dialog
+        if (mounted) {
+          Navigator.pop(context); // Đóng loading dialog
+        }
+
+        // Hiển thị thông báo lỗi
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Không thể thêm thành viên: ${e.toString().replaceFirst('Exception: ', '')}'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    }
   }
 
   @override
@@ -325,32 +419,54 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
-                              'Thành viên',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppConstants.gradientEnd.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                '${_response?.users.length ?? 0}',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppConstants.gradientEnd,
+                            Row(
+                              children: [
+                                const Text(
+                                  'Thành viên',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
                                 ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppConstants.gradientEnd.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    '${_response?.users.length ?? 0}',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppConstants.gradientEnd,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            ElevatedButton.icon(
+                              onPressed: _addMember,
+                              icon: const Icon(Icons.add, size: 20),
+                              label: const Text('Thêm Thành viên'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF2196F3), // Màu xanh dương giống nút Tạo Nhóm
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                elevation: 2,
                               ),
                             ),
                           ],
