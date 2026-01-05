@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'list_user_of_group.dart';
 import 'group_detail_screen.dart';
 import '../../constants/app_constants.dart';
 import '../../services/group_service.dart';
@@ -43,16 +42,26 @@ class GroupScreenContentState extends State<GroupScreenContent> {
   }
 
   void _filterGroups(String query) {
+    print('🔍 _filterGroups called with query: "$query"');
+    print('  - Current _groups.length: ${_groups.length}');
+    print('  - Current _isSearching: $_isSearching');
+    
     setState(() {
       if (query.trim().isEmpty) {
-        _filteredGroups = _groups;
+        _filteredGroups = List.from(_groups); // Copy list để tránh reference issues
         _isSearching = false;
+        print('  ✅ Query empty, showing all ${_filteredGroups.length} groups');
       } else {
         _isSearching = true;
         final lowerQuery = query.toLowerCase().trim();
         _filteredGroups = _groups.where((group) {
-          return group.name.toLowerCase().contains(lowerQuery);
+          final matches = group.name.toLowerCase().contains(lowerQuery);
+          if (matches) {
+            print('    ✅ Group "${group.name}" matches query');
+          }
+          return matches;
         }).toList();
+        print('  ✅ Query not empty, filtered to ${_filteredGroups.length} groups');
       }
     });
   }
@@ -92,14 +101,16 @@ class GroupScreenContentState extends State<GroupScreenContent> {
         authProvider: authProvider,
       );
 
-      print('Total groups from API: ${allGroups.length}');
+      print('✅ Total groups from API: ${allGroups.length}');
       for (final group in allGroups) {
         print('  - Group: ${group.name} (ID: ${group.id})');
       }
 
-      // API getMyGroups() đã filter theo user hiện tại rồi, nên không cần filter lại
+      // Backend đã filter theo user rồi (PrivateGetGroupsWhereMember)
       // Chỉ cần lấy số lượng thành viên cho mỗi nhóm
       final memberCounts = <String, int>{};
+      
+      print('📊 Getting member counts for ${allGroups.length} groups (backend already filtered by user)...');
       
       for (final group in allGroups) {
         try {
@@ -110,43 +121,40 @@ class GroupScreenContentState extends State<GroupScreenContent> {
           
           // Lưu số lượng thành viên
           final userCount = usersResponse.users.length;
-          memberCounts[group.id] = userCount;
+          memberCounts[group.id] = userCount > 0 ? userCount : 1; // Ít nhất 1 (người tạo)
           
-          print('Group ${group.name} (ID: ${group.id}) has $userCount users');
-          if (userCount > 0) {
-            for (final user in usersResponse.users) {
-              print('  - User ID: ${user.userId}, Name: ${user.user.providerName}');
-            }
-          } else {
-            print('  - No users found in group (có thể là nhóm mới tạo)');
-            // Nếu không có users, giả định ít nhất có 1 thành viên (người tạo)
-            memberCounts[group.id] = 1;
-          }
+          print('  ✅ Group "${group.name}" (ID: ${group.id}): $userCount users');
         } catch (e) {
-          // Nếu không lấy được danh sách users, vẫn thêm nhóm vào danh sách
-          // vì có thể nhóm mới tạo chưa có user trong danh sách ngay
-          print('⚠ Không thể lấy danh sách users cho nhóm ${group.id}: $e');
-          print('Vẫn thêm nhóm ${group.name} vào danh sách với số thành viên mặc định = 1');
+          print('  ⚠ Không thể lấy danh sách users cho nhóm ${group.id}: $e');
           // Nếu không lấy được, giả định ít nhất có 1 thành viên (người tạo)
           memberCounts[group.id] = 1;
         }
       }
 
-      print('Total groups to display: ${allGroups.length}');
-      print('Member counts map:');
+      print('=== Final Results ===');
+      print('Total groups from API (already filtered by backend): ${allGroups.length}');
+      print('Member counts map size: ${memberCounts.length}');
       memberCounts.forEach((groupId, count) {
         print('  - Group ID: $groupId -> $count members');
       });
 
       if (mounted) {
         setState(() {
-          _groups = allGroups; // Hiển thị tất cả nhóm từ API (đã được filter rồi)
+          _groups = allGroups; // Backend đã filter rồi, hiển thị tất cả
           _memberCounts = memberCounts;
           _isLoading = false;
         });
         // Áp dụng filter search nếu có
         _filterGroups(_searchController.text);
-        print('State updated. Groups: ${_groups.length}, MemberCounts: ${_memberCounts.length}');
+        print('✅✅✅ State updated successfully! ✅✅✅');
+        print('  - _groups.length: ${_groups.length}');
+        print('  - _memberCounts.length: ${_memberCounts.length}');
+        print('  - _isSearching: $_isSearching');
+        print('  - _filteredGroups.length: ${_filteredGroups.length}');
+        print('  - Search query: "${_searchController.text}"');
+        print('  - Will display: ${_isSearching ? _filteredGroups.length : _groups.length} groups');
+      } else {
+        print('❌ Widget not mounted, cannot update state');
       }
     } catch (e) {
       print('Error loading groups: $e');

@@ -44,13 +44,47 @@ class GroupUser {
   });
 
   factory GroupUser.fromJson(Map<String, dynamic> json) {
+    print('🔍 GroupUser.fromJson - Parsing group user:');
+    print('  JSON keys: ${json.keys.toList()}');
+    
+    // Parse user với null safety
+    if (!json.containsKey('user') || json['user'] == null) {
+      throw Exception('GroupUser.fromJson: Field "user" không được null. JSON: $json');
+    }
+    
+    if (json['user'] is! Map<String, dynamic>) {
+      throw Exception('GroupUser.fromJson: Field "user" phải là Map<String, dynamic>. Nhận được: ${json['user'].runtimeType}');
+    }
+    
+    final userJson = json['user'] as Map<String, dynamic>;
+    print('  User JSON before parsing: $userJson');
+    
+    final user = User.fromJson(userJson);
+    print('  ✅ Parsed User: id=${user.id}, name="${user.providerName}", email="${user.providerEmail}"');
+    
+    // Parse group với null safety
+    Group? group;
+    if (json.containsKey('group') && json['group'] != null && json['group'] is Map<String, dynamic>) {
+      group = Group.fromJson(json['group'] as Map<String, dynamic>);
+    } else {
+      // Nếu không có group, tạo một group object từ group_id
+      print('  ⚠ Group field missing or null, creating from group_id');
+      group = Group(
+        id: json['group_id']?.toString() ?? '',
+        name: '',
+        description: '',
+      );
+    }
+    
     return GroupUser(
-      id: json['id'] as String,
-      userId: json['user_id'] as String,
-      user: User.fromJson(json['user'] as Map<String, dynamic>),
-      groupId: json['group_id'] as String,
-      group: Group.fromJson(json['group'] as Map<String, dynamic>),
-      createdAt: DateTime.parse(json['created_at'] as String),
+      id: json['id']?.toString() ?? '',
+      userId: json['user_id']?.toString() ?? '',
+      user: user,
+      groupId: json['group_id']?.toString() ?? '',
+      group: group,
+      createdAt: json['created_at'] != null 
+          ? DateTime.parse(json['created_at'].toString())
+          : DateTime.now(),
     );
   }
 }
@@ -67,11 +101,76 @@ class User {
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
-    return User(
-      id: json['id'] as String,
-      providerName: json['provider_name'] as String? ?? '',
-      providerEmail: json['provider_email'] as String? ?? '',
+    // Debug: Log toàn bộ json để xem structure
+    print('🔍 User.fromJson - Parsing user data:');
+    print('  JSON keys: ${json.keys.toList()}');
+    print('  Full JSON: $json');
+    
+    // Helper function để lấy giá trị string từ JSON, xử lý null
+    String? getStringValue(Map<String, dynamic> json, String key) {
+      if (!json.containsKey(key)) {
+        print('    ⚠ Key "$key" not found');
+        return null;
+      }
+      final value = json[key];
+      print('    Key "$key" value: $value (type: ${value?.runtimeType})');
+      
+      if (value == null) {
+        print('    ⚠ Value is null');
+        return null;
+      }
+      
+      final str = value.toString().trim();
+      if (str.isEmpty) {
+        print('    ⚠ Value is empty string');
+        return null;
+      }
+      if (str == 'null' || str == 'Null' || str == 'NULL') {
+        print('    ⚠ Value is string "null"');
+        return null;
+      }
+      
+      print('    ✅ Valid value: $str');
+      return str;
+    }
+    
+    // Thử các field names có thể có cho name
+    String name = '';
+    name = getStringValue(json, 'provider_name') ?? 
+           getStringValue(json, 'name') ?? 
+           getStringValue(json, 'username') ?? 
+           getStringValue(json, 'full_name') ?? 
+           getStringValue(json, 'display_name') ?? 
+           '';
+    
+    if (name.isNotEmpty) {
+      print('  ✅ Final name: "$name"');
+    } else {
+      print('  ❌ No name found - all values are null/empty');
+    }
+    
+    // Thử các field names có thể có cho email
+    String email = '';
+    email = getStringValue(json, 'provider_email') ?? 
+            getStringValue(json, 'email') ?? 
+            '';
+    
+    if (email.isNotEmpty) {
+      print('  ✅ Final email: "$email"');
+    } else {
+      print('  ❌ No email found - all values are null/empty');
+    }
+    
+    final user = User(
+      id: json['id']?.toString() ?? '',
+      providerName: name,
+      providerEmail: email,
     );
+    
+    print('  📝 Final Parsed User: id=${user.id}, name="$name", email="$email"');
+    print('  📝 User object: providerName="${user.providerName}", providerEmail="${user.providerEmail}"');
+    
+    return user;
   }
 
   Map<String, dynamic> toJson() {
@@ -154,13 +253,39 @@ class GetUsersByGroupIdResponse {
     List<GroupUser> users = [];
     if (json['users'] != null) {
       if (json['users'] is List) {
-        users = (json['users'] as List<dynamic>)
-            .where((e) => e != null && e is Map<String, dynamic>)
-            .map((e) => GroupUser.fromJson(e as Map<String, dynamic>))
-            .toList();
+        final usersList = json['users'] as List<dynamic>;
+        print('📋 GetUsersByGroupIdResponse.fromJson - Parsing ${usersList.length} users...');
+        
+        for (int i = 0; i < usersList.length; i++) {
+          final userItem = usersList[i];
+          if (userItem == null) {
+            print('  ⚠ User item $i is null, skipping');
+            continue;
+          }
+          
+          if (userItem is! Map<String, dynamic>) {
+            print('  ⚠ User item $i is not Map, type: ${userItem.runtimeType}, skipping');
+            continue;
+          }
+          
+          try {
+            final groupUser = GroupUser.fromJson(userItem);
+            users.add(groupUser);
+            print('  ✅ Successfully parsed user $i: ${groupUser.user.id}');
+          } catch (e) {
+            print('  ❌ Error parsing user $i: $e');
+            print('  User item data: $userItem');
+            // Không throw, chỉ skip user này để không làm crash toàn bộ
+            continue;
+          }
+        }
+        
+        print('📋 Total users parsed successfully: ${users.length}/${usersList.length}');
       } else {
         throw Exception('Field "users" phải là List. Nhận được: ${json['users'].runtimeType}');
       }
+    } else {
+      print('⚠ GetUsersByGroupIdResponse.fromJson - Field "users" is null or missing, using empty list');
     }
     
     return GetUsersByGroupIdResponse(

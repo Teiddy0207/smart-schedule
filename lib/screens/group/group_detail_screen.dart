@@ -2,20 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/group_service.dart';
+import '../../services/user_search_service.dart';
 import '../../models/group/group_model.dart';
 import '../../constants/app_constants.dart';
-import 'user_busy_bottom_sheet.dart';
+import 'add_user_to_group.dart';
 
 class GroupDetailScreen extends StatefulWidget {
   final String groupId;
   final String groupName;
   final String? groupDescription; // Mô tả nhóm (optional)
+  final Map<String, Map<String, String>>? userInfoMap; // Map user_id -> {name, email} từ create group
 
   const GroupDetailScreen({
     super.key,
     required this.groupId,
     required this.groupName,
     this.groupDescription,
+    this.userInfoMap, // Thông tin user từ create group screen
   });
 
   @override
@@ -26,6 +29,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
   bool _isLoading = true;
   String? _errorMessage;
   GetUsersByGroupIdResponse? _response;
+  Map<String, UserSearchResult> _userInfoCache = {}; // Cache thông tin user
 
   @override
   void initState() {
@@ -45,6 +49,67 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
       final response = await GroupService.getUsersByGroupId(
         authProvider: authProvider,
         groupId: widget.groupId,
+      );
+
+      // Lấy thông tin đầy đủ cho các users có provider_name/provider_email null
+      // Sử dụng thông tin từ userInfoMap (từ create group screen) hoặc cache
+      _userInfoCache.clear();
+      final List<GroupUser> updatedUsers = [];
+      
+      for (final groupUser in response.users) {
+        // Nếu user đã có đầy đủ thông tin, giữ nguyên
+        if (groupUser.user.providerName.isNotEmpty && groupUser.user.providerEmail.isNotEmpty) {
+          updatedUsers.add(groupUser);
+          continue;
+        }
+        
+        // Nếu thiếu thông tin, thử lấy từ userInfoMap (từ create group screen)
+        String? name;
+        String? email;
+        
+        if (widget.userInfoMap != null && widget.userInfoMap!.containsKey(groupUser.user.id)) {
+          final userInfo = widget.userInfoMap![groupUser.user.id]!;
+          name = userInfo['name'];
+          email = userInfo['email'];
+          print('✅ Found user info from userInfoMap for ${groupUser.user.id}: name=$name, email=$email');
+        }
+        
+        // Nếu vẫn không có, thử từ cache
+        if ((name == null || name.isEmpty) && _userInfoCache.containsKey(groupUser.user.id)) {
+          final cachedInfo = _userInfoCache[groupUser.user.id]!;
+          name = cachedInfo.displayName;
+          email = cachedInfo.email;
+          print('✅ Found user info from cache for ${groupUser.user.id}');
+        }
+        
+        // Nếu có thông tin từ userInfoMap hoặc cache, cập nhật user
+        if ((name != null && name.isNotEmpty) || (email != null && email.isNotEmpty)) {
+          final updatedUser = User(
+            id: groupUser.user.id,
+            providerName: name ?? groupUser.user.providerName,
+            providerEmail: email ?? groupUser.user.providerEmail,
+          );
+          updatedUsers.add(GroupUser(
+            id: groupUser.id,
+            userId: groupUser.userId,
+            user: updatedUser,
+            groupId: groupUser.groupId,
+            group: groupUser.group,
+            createdAt: groupUser.createdAt,
+          ));
+          print('✅ Updated user ${groupUser.user.id} with info: name=${updatedUser.providerName}, email=${updatedUser.providerEmail}');
+        } else {
+          // Không có thông tin, giữ nguyên (sẽ hiển thị fallback)
+          updatedUsers.add(groupUser);
+          print('⚠ User ${groupUser.user.id} missing info, will show fallback');
+        }
+      }
+      
+      // Cập nhật response với users đã được xử lý
+      final updatedResponse = GetUsersByGroupIdResponse(
+        groupId: response.groupId,
+        group: response.group,
+        users: updatedUsers,
       );
 
       // Nếu response không có thông tin group đầy đủ (name rỗng), cập nhật từ widget
@@ -90,6 +155,106 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
   bool _isCurrentUser(String userId) {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     return authProvider.currentUser?.id == userId;
+  }
+
+  Future<void> _addMember() async {
+    // Lấy danh sách thành viên hiện tại để truyền vào AddUserToGroup
+    final existingMembers = _response?.users.map((groupUser) {
+      return {
+        'id': groupUser.user.id,
+        'name': groupUser.user.providerName,
+        'email': groupUser.user.providerEmail,
+      };
+    }).toList() ?? [];
+
+    // Mở màn hình tìm kiếm và thêm thành viên
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddUserToGroup(
+          existingMembers: existingMembers,
+        ),
+      ),
+    );
+
+    // Nếu có kết quả (user đã chọn), thêm vào nhóm
+    if (result != null && result is Map<String, String>) {
+      final userId = result['id'];
+      if (userId == null || userId.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Không thể thêm thành viên: thiếu thông tin user ID'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+      
+      // Log để debug
+      print('=== Adding member to group ===');
+      print('User ID from search result: $userId');
+      print('User name: ${result['name']}');
+      print('User email: ${result['email']}');
+      print('Group ID: ${widget.groupId}');
+
+      // Hiển thị loading
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
+      }
+
+      try {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        
+        // Gọi API thêm user vào nhóm
+        await GroupService.addUsersToGroup(
+          authProvider: authProvider,
+          groupId: widget.groupId,
+          userIds: [userId],
+        );
+
+        // Đóng loading dialog
+        if (mounted) {
+          Navigator.pop(context); // Đóng loading dialog
+        }
+
+        // Hiển thị thông báo thành công
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Đã thêm ${result['name'] ?? result['email'] ?? 'thành viên'} vào nhóm'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+
+        // Refresh lại danh sách thành viên
+        await _loadGroupDetails();
+      } catch (e) {
+        // Đóng loading dialog
+        if (mounted) {
+          Navigator.pop(context); // Đóng loading dialog
+        }
+
+        // Hiển thị thông báo lỗi
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Không thể thêm thành viên: ${e.toString().replaceFirst('Exception: ', '')}'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    }
   }
 
   @override
@@ -261,32 +426,54 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
-                              'Thành viên',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppConstants.gradientEnd.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                '${_response?.users.length ?? 0}',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppConstants.gradientEnd,
+                            Row(
+                              children: [
+                                const Text(
+                                  'Thành viên',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
                                 ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppConstants.gradientEnd.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    '${_response?.users.length ?? 0}',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppConstants.gradientEnd,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            ElevatedButton.icon(
+                              onPressed: _addMember,
+                              icon: const Icon(Icons.add, size: 20),
+                              label: const Text('Thêm Thành viên'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF2196F3), // Màu xanh dương giống nút Tạo Nhóm
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                elevation: 2,
                               ),
                             ),
                           ],
@@ -323,16 +510,66 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                       else
                         ..._response!.users.map((groupUser) {
                           final isMe = _isCurrentUser(groupUser.userId);
-                          return InkWell(
-                            onTap: () {
-                              _openUserBusy(groupUser.userId, groupUser.user.providerName);
-                            },
-                            borderRadius: BorderRadius.circular(12),
-                            child: _buildUserCard(
-                              name: groupUser.user.providerName,
-                              email: groupUser.user.providerEmail,
-                              isMe: isMe,
-                            ),
+                          
+                          // Debug: Log thông tin user
+                          print('🎨 Building user card for:');
+                          print('  User ID: ${groupUser.user.id}');
+                          print('  providerName: "${groupUser.user.providerName}" (isEmpty: ${groupUser.user.providerName.isEmpty})');
+                          print('  providerEmail: "${groupUser.user.providerEmail}" (isEmpty: ${groupUser.user.providerEmail.isEmpty})');
+                          
+                          // Lấy name và email
+                          String name = groupUser.user.providerName.trim();
+                          String email = groupUser.user.providerEmail.trim();
+                          
+                          // Nếu không có thông tin, thử lấy từ userInfoMap (từ create group screen)
+                          if ((name.isEmpty || email.isEmpty) && widget.userInfoMap != null) {
+                            if (widget.userInfoMap!.containsKey(groupUser.user.id)) {
+                              final userInfo = widget.userInfoMap![groupUser.user.id]!;
+                              print('  ✅ Found in userInfoMap: ${userInfo}');
+                              if (name.isEmpty && userInfo['name'] != null && userInfo['name']!.isNotEmpty) {
+                                name = userInfo['name']!;
+                                print('  ✅ Updated name from userInfoMap: $name');
+                              }
+                              if (email.isEmpty && userInfo['email'] != null && userInfo['email']!.isNotEmpty) {
+                                email = userInfo['email']!;
+                                print('  ✅ Updated email from userInfoMap: $email');
+                              }
+                            }
+                          }
+                          
+                          // Nếu vẫn không có thông tin, thử từ cache
+                          if ((name.isEmpty || email.isEmpty) && _userInfoCache.containsKey(groupUser.user.id)) {
+                            final cachedInfo = _userInfoCache[groupUser.user.id]!;
+                            print('  ✅ Found in cache: ${cachedInfo.displayName}, ${cachedInfo.email}');
+                            if (name.isEmpty) {
+                              name = cachedInfo.displayName ?? cachedInfo.email;
+                            }
+                            if (email.isEmpty) {
+                              email = cachedInfo.email;
+                            }
+                          }
+                          
+                          // Nếu vẫn rỗng, dùng fallback
+                          if (name.isEmpty) {
+                            name = 'Người dùng';
+                            print('  ⚠ Using fallback name: $name');
+                          }
+                          if (email.isEmpty) {
+                            // Thử dùng user ID làm identifier
+                            if (groupUser.user.id.length >= 8) {
+                              email = 'ID: ${groupUser.user.id.substring(0, 8)}...';
+                            } else {
+                              email = 'ID: ${groupUser.user.id}';
+                            }
+                            print('  ⚠ Using fallback email: $email');
+                          }
+                          
+                          print('  📝 Final display: name="$name", email="$email"');
+                          
+                          return _buildUserCard(
+                            name: name,
+                            email: email,
+                            isMe: isMe,
                           );
                         }),
                       

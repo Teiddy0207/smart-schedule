@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/group_service.dart';
-import 'list_user_of_group.dart';
+import 'group_detail_screen.dart';
 import 'add_user_to_group.dart';
 
 class CreateGroup extends StatefulWidget {
@@ -91,27 +91,99 @@ class _CreateGroupState extends State<CreateGroup> {
       if (mounted) {
         // Kiểm tra xem có ID nhóm không
         if (response.group.id.isNotEmpty) {
+          // Thêm các thành viên vào nhóm sau khi tạo nhóm thành công
+          if (_members.isNotEmpty) {
+            print('Adding ${_members.length} members to group ${response.group.id}...');
+            
+            // Lấy danh sách user IDs từ _members
+            final userIds = _members
+                .map((member) => member['id'])
+                .where((id) => id != null && id.isNotEmpty)
+                .cast<String>()
+                .toList();
+            
+            if (userIds.isNotEmpty) {
+              try {
+                // Gọi API một lần để thêm tất cả users
+                await GroupService.addUsersToGroup(
+                  authProvider: authProvider,
+                  groupId: response.group.id,
+                  userIds: userIds,
+                );
+                
+                print('✅ Added ${userIds.length} members to group successfully');
+                
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Tạo nhóm thành công! Đã thêm ${userIds.length} thành viên.'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } catch (e) {
+                print('⚠ Failed to add members: $e');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Tạo nhóm thành công nhưng không thể thêm thành viên: ${e.toString().replaceFirst('Exception: ', '')}'),
+                    backgroundColor: Colors.orange,
+                    duration: const Duration(seconds: 4),
+                  ),
+                );
+              }
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Tạo nhóm thành công!'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Tạo nhóm thành công!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+          
+          // Tạo map user_id -> {name, email} để truyền sang GroupDetailScreen
+          final Map<String, Map<String, String>> userInfoMap = {};
+          for (final member in _members) {
+            final userId = member['id'];
+            if (userId != null && userId.isNotEmpty) {
+              userInfoMap[userId] = {
+                'name': member['name'] ?? '',
+                'email': member['email'] ?? '',
+              };
+            }
+          }
+          
           // Có ID, điều hướng đến màn hình nhóm mới vừa tạo
-          Navigator.pushReplacement(
+          // Sử dụng push thay vì pushReplacement để có thể quay lại và refresh
+          Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => ListUserOfGroup(
+              builder: (context) => GroupDetailScreen(
                 groupName: response.group.name,
                 groupId: response.group.id,
+                userInfoMap: userInfoMap.isNotEmpty ? userInfoMap : null,
               ),
             ),
-          );
+          ).then((_) {
+            // Khi quay lại từ màn hình chi tiết, pop về màn hình trước với result để trigger refresh
+            Navigator.pop(context, true); // true = đã tạo nhóm thành công, trigger refresh
+          });
         } else {
           // Không có ID (backend không trả về), pop về màn hình trước với result để trigger refresh
           Navigator.pop(context, true); // true = đã tạo nhóm thành công
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Tạo nhóm thành công!'),
+              backgroundColor: Colors.green,
+            ),
+          );
         }
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Tạo nhóm thành công!'),
-            backgroundColor: Colors.green,
-          ),
-        );
       }
     } catch (e) {
       if (mounted) {
