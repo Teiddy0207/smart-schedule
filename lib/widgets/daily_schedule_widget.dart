@@ -22,11 +22,21 @@ class DailyScheduleWidget extends StatefulWidget {
 class _DailyScheduleWidgetState extends State<DailyScheduleWidget> {
   List<DailyEvent> _events = [];
   bool _isLoading = true;
+  final ScrollController _scrollController = ScrollController();
+
+  // Height of each event card (approximate)
+  static const double _eventCardHeight = 130.0;
 
   @override
   void initState() {
     super.initState();
     _loadEvents();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -48,7 +58,69 @@ class _DailyScheduleWidgetState extends State<DailyScheduleWidget> {
       _events = events;
       _isLoading = false;
     });
+
+    // Auto-scroll to the event closest to current time
+    if (events.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToClosestEvent();
+      });
+    }
   }
+
+  /// Find and scroll to the event closest to current time
+  void _scrollToClosestEvent() {
+    if (_events.isEmpty || !_scrollController.hasClients) return;
+
+    final now = DateTime.now();
+    final currentMinutes = now.hour * 60 + now.minute;
+
+    int closestIndex = 0;
+    int? closestUpcomingDiff;
+    int? closestPastDiff;
+    int closestUpcomingIndex = 0;
+    int closestPastIndex = 0;
+
+    for (int i = 0; i < _events.length; i++) {
+      final event = _events[i];
+      final parts = event.startTime.split(':');
+      if (parts.length == 2) {
+        final eventMinutes = int.parse(parts[0]) * 60 + int.parse(parts[1]);
+        final diff = eventMinutes - currentMinutes;
+        
+        if (diff >= 0) {
+          // Upcoming event
+          if (closestUpcomingDiff == null || diff < closestUpcomingDiff) {
+            closestUpcomingDiff = diff;
+            closestUpcomingIndex = i;
+          }
+        } else {
+          // Past event
+          if (closestPastDiff == null || diff.abs() < closestPastDiff) {
+            closestPastDiff = diff.abs();
+            closestPastIndex = i;
+          }
+        }
+      }
+    }
+
+    // Prefer upcoming event, fallback to past event
+    if (closestUpcomingDiff != null) {
+      closestIndex = closestUpcomingIndex;
+    } else if (closestPastDiff != null) {
+      closestIndex = closestPastIndex;
+    }
+
+    // Calculate scroll offset
+    final offset = closestIndex * _eventCardHeight;
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    
+    _scrollController.animateTo(
+      offset.clamp(0.0, maxScroll),
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +133,7 @@ class _DailyScheduleWidgetState extends State<DailyScheduleWidget> {
             AppConstants.spacingL,
             AppConstants.spacingXXL,
             AppConstants.spacingL,
-            AppConstants.spacingL,
+            4, // Reduced spacing
           ),
           child: Row(
             children: [
@@ -109,7 +181,7 @@ class _DailyScheduleWidgetState extends State<DailyScheduleWidget> {
         const Padding(
           padding: EdgeInsets.fromLTRB(
             AppConstants.spacingL,
-            AppConstants.spacingL,
+            4, // Reduced spacing
             AppConstants.spacingL,
             AppConstants.spacingM,
           ),
@@ -130,6 +202,8 @@ class _DailyScheduleWidgetState extends State<DailyScheduleWidget> {
               : _events.isEmpty
                   ? _buildEmptyState()
                   : ListView.builder(
+                      controller: _scrollController,
+                      physics: const ClampingScrollPhysics(), // No overscroll effect
                       padding: const EdgeInsets.symmetric(
                         horizontal: AppConstants.spacingL,
                       ),
@@ -167,8 +241,6 @@ class _DailyScheduleWidgetState extends State<DailyScheduleWidget> {
   }
 
   Widget _buildTimelineEvent(DailyEvent event) {
-    final height = event.durationHours * 60.0; // 60px per hour
-
     return Padding(
       padding: const EdgeInsets.only(bottom: AppConstants.spacingM),
       child: Row(

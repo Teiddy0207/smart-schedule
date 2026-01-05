@@ -113,9 +113,14 @@ class DailyEvent {
     String endTimeStr;
     
     if (startData?['dateTime'] != null) {
-      // Timed event
-      startDateTime = DateTime.parse(startData!['dateTime'] as String);
-      endDateTime = DateTime.parse(endData?['dateTime'] as String? ?? startData['dateTime'] as String);
+      // Timed event - parse and convert to local timezone
+      final parsedStart = DateTime.parse(startData!['dateTime'] as String);
+      final parsedEnd = DateTime.parse(endData?['dateTime'] as String? ?? startData['dateTime'] as String);
+      
+      // Convert to local time to display correctly
+      startDateTime = parsedStart.toLocal();
+      endDateTime = parsedEnd.toLocal();
+      
       startTimeStr = '${startDateTime.hour.toString().padLeft(2, '0')}:${startDateTime.minute.toString().padLeft(2, '0')}';
       endTimeStr = '${endDateTime.hour.toString().padLeft(2, '0')}:${endDateTime.minute.toString().padLeft(2, '0')}';
     } else {

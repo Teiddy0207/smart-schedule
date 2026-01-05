@@ -42,10 +42,8 @@ class _DashboardScreenContentState extends State<DashboardScreenContent> {
     });
   }
 
-  void _onMonthSelected(int month) {
+  void _onMonthSelected(int month, int year) {
     setState(() {
-      // Giữ ngày hiện tại, nhưng clamp về ngày cuối tháng nếu tháng mới có ít ngày hơn
-      final year = _selectedDate.year;
       final currentDay = _selectedDate.day;
       
       // Tìm ngày cuối cùng của tháng mới
@@ -82,7 +80,7 @@ class _DashboardScreenContentState extends State<DashboardScreenContent> {
         );
       case DashboardView.yearly:
         return YearViewWidget(
-          year: _selectedDate.year,
+          initialYear: _selectedDate.year,
           selectedMonth: _selectedDate.month,
           onMonthSelected: _onMonthSelected,
           onBack: null, // Không có back từ year view
