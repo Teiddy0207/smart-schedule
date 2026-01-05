@@ -269,7 +269,10 @@ class GroupService {
         'user_ids': userIds,
       };
 
+      print('=== Add Users To Group API ===');
       print('Request body: ${jsonEncode(requestBody)}');
+      print('User IDs being sent: $userIds');
+      print('Note: Backend will convert users.id to social_logins.id if needed');
 
       final response = await http.post(
         url,

@@ -191,6 +191,13 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
         }
         return;
       }
+      
+      // Log để debug
+      print('=== Adding member to group ===');
+      print('User ID from search result: $userId');
+      print('User name: ${result['name']}');
+      print('User email: ${result['email']}');
+      print('Group ID: ${widget.groupId}');
 
       // Hiển thị loading
       if (mounted) {
