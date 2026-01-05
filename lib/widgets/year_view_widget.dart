@@ -1,27 +1,20 @@
 import 'package:flutter/material.dart';
 import '../../constants/app_constants.dart';
 
-/// Widget hiển thị dashboard năm với grid 12 tháng và navigation giữa các năm
-class YearViewWidget extends StatefulWidget {
-  final int initialYear;
+/// Widget hiển thị dashboard năm với grid 12 tháng
+class YearViewWidget extends StatelessWidget {
+  final int year;
   final int? selectedMonth;
-  final Function(int month, int year)? onMonthSelected;
+  final Function(int)? onMonthSelected;
   final VoidCallback? onBack;
 
   const YearViewWidget({
     super.key,
-    required this.initialYear,
+    required this.year,
     this.selectedMonth,
     this.onMonthSelected,
     this.onBack,
   });
-
-  @override
-  State<YearViewWidget> createState() => _YearViewWidgetState();
-}
-
-class _YearViewWidgetState extends State<YearViewWidget> {
-  late int _currentYear;
 
   // Tên các tháng tiếng Việt
   static const List<String> _monthNames = [
@@ -31,30 +24,6 @@ class _YearViewWidgetState extends State<YearViewWidget> {
   ];
 
   @override
-  void initState() {
-    super.initState();
-    _currentYear = widget.initialYear;
-  }
-
-  void _previousYear() {
-    setState(() {
-      _currentYear--;
-    });
-  }
-
-  void _nextYear() {
-    setState(() {
-      _currentYear++;
-    });
-  }
-
-  void _goToCurrentYear() {
-    setState(() {
-      _currentYear = DateTime.now().year;
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     final currentMonth = DateTime.now().month;
     final currentYear = DateTime.now().year;
@@ -62,7 +31,7 @@ class _YearViewWidgetState extends State<YearViewWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header với năm và navigation
+        // Header với năm
         Padding(
           padding: const EdgeInsets.fromLTRB(
             AppConstants.spacingL,
@@ -72,9 +41,9 @@ class _YearViewWidgetState extends State<YearViewWidget> {
           ),
           child: Row(
             children: [
-              if (widget.onBack != null)
+              if (onBack != null)
                 InkWell(
-                  onTap: widget.onBack,
+                  onTap: onBack,
                   borderRadius: BorderRadius.circular(AppConstants.radiusM),
                   child: const Padding(
                     padding: EdgeInsets.all(AppConstants.spacingS),
@@ -85,17 +54,23 @@ class _YearViewWidgetState extends State<YearViewWidget> {
                     ),
                   ),
                 ),
-              if (widget.onBack == null) const SizedBox(width: 6),
-              if (widget.onBack != null) const SizedBox(width: 6),
-              
-              // Year navigation: < 2026 >
-              _buildYearNavigator(),
-              
+              // Placeholder để căn thẳng hàng với các views có nút back
+              if (onBack == null)
+                const SizedBox(width: 6),
+              if (onBack != null) const SizedBox(width: 6),
+              Text(
+                '$year',
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppConstants.primaryColor,
+                ),
+              ),
               const Spacer(),
-              
-              // Go to current year button
               InkWell(
-                onTap: _goToCurrentYear,
+                onTap: () {
+                  // Refresh về năm hiện tại
+                },
                 borderRadius: BorderRadius.circular(AppConstants.radiusCircle),
                 child: Container(
                   padding: const EdgeInsets.all(AppConstants.spacingM),
@@ -104,7 +79,7 @@ class _YearViewWidgetState extends State<YearViewWidget> {
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
-                    Icons.today,
+                    Icons.refresh,
                     color: AppConstants.primaryColor,
                     size: AppConstants.iconSizeMedium,
                   ),
@@ -128,11 +103,11 @@ class _YearViewWidgetState extends State<YearViewWidget> {
               itemCount: 12,
               itemBuilder: (context, index) {
                 final month = index + 1;
-                final isCurrentMonth = month == currentMonth && _currentYear == currentYear;
+                final isCurrentMonth = month == currentMonth && year == currentYear;
 
                 return InkWell(
                   onTap: () {
-                    widget.onMonthSelected?.call(month, _currentYear);
+                    onMonthSelected?.call(month);
                   },
                   borderRadius: BorderRadius.circular(AppConstants.radiusL),
                   child: Container(
@@ -162,54 +137,6 @@ class _YearViewWidgetState extends State<YearViewWidget> {
                   ),
                 );
               },
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Build year navigator with prev/next buttons
-  Widget _buildYearNavigator() {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Previous year button
-        InkWell(
-          onTap: _previousYear,
-          borderRadius: BorderRadius.circular(AppConstants.radiusM),
-          child: const Padding(
-            padding: EdgeInsets.all(4),
-            child: Icon(
-              Icons.arrow_back_ios,
-              color: AppConstants.primaryColor,
-              size: 18,
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        
-        // Year text
-        Text(
-          '$_currentYear',
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: AppConstants.primaryColor,
-          ),
-        ),
-        
-        const SizedBox(width: 8),
-        // Next year button
-        InkWell(
-          onTap: _nextYear,
-          borderRadius: BorderRadius.circular(AppConstants.radiusM),
-          child: const Padding(
-            padding: EdgeInsets.all(4),
-            child: Icon(
-              Icons.arrow_forward_ios,
-              color: AppConstants.primaryColor,
-              size: 18,
             ),
           ),
         ),

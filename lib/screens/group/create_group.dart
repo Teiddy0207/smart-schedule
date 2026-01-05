@@ -206,8 +206,8 @@ class _CreateGroupState extends State<CreateGroup> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFF7E6DF7), // tím nhạt
-                Color(0xFF6B5CE6), // tím đậm
+                Color(0xFF9C88FF), // tím nhạt
+                Color(0xFF7C3AED), // tím đậm
               ],
             ),
           ),
