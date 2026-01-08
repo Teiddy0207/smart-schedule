@@ -81,4 +81,11 @@ class CalendarService {
 
     return await ApiService.get('$_basePath/events?$queryParams');
   }
+
+  /// Delete a calendar event
+  /// DELETE /api/v1/private/calendar/events/:id
+  static Future<Map<String, dynamic>> deleteEvent(String eventId) async {
+    AppLogger.info('Deleting calendar event: $eventId', tag: _tag);
+    return await ApiService.delete('$_basePath/events/$eventId');
+  }
 }

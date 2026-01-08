@@ -3,6 +3,8 @@ import '../../constants/app_constants.dart';
 import '../../utils/date_formatter.dart';
 import '../../models/daily_event.dart';
 import '../../services/event_service.dart';
+import '../../services/calendar_service.dart';
+import 'top_notification.dart';
 
 /// Widget hiển thị lịch theo ngày với timeline
 class DailyScheduleWidget extends StatefulWidget {
@@ -22,21 +24,11 @@ class DailyScheduleWidget extends StatefulWidget {
 class _DailyScheduleWidgetState extends State<DailyScheduleWidget> {
   List<DailyEvent> _events = [];
   bool _isLoading = true;
-  final ScrollController _scrollController = ScrollController();
-
-  // Height of each event card (approximate)
-  static const double _eventCardHeight = 130.0;
 
   @override
   void initState() {
     super.initState();
     _loadEvents();
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
   }
 
   @override
@@ -58,69 +50,7 @@ class _DailyScheduleWidgetState extends State<DailyScheduleWidget> {
       _events = events;
       _isLoading = false;
     });
-
-    // Auto-scroll to the event closest to current time
-    if (events.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToClosestEvent();
-      });
-    }
   }
-
-  /// Find and scroll to the event closest to current time
-  void _scrollToClosestEvent() {
-    if (_events.isEmpty || !_scrollController.hasClients) return;
-
-    final now = DateTime.now();
-    final currentMinutes = now.hour * 60 + now.minute;
-
-    int closestIndex = 0;
-    int? closestUpcomingDiff;
-    int? closestPastDiff;
-    int closestUpcomingIndex = 0;
-    int closestPastIndex = 0;
-
-    for (int i = 0; i < _events.length; i++) {
-      final event = _events[i];
-      final parts = event.startTime.split(':');
-      if (parts.length == 2) {
-        final eventMinutes = int.parse(parts[0]) * 60 + int.parse(parts[1]);
-        final diff = eventMinutes - currentMinutes;
-        
-        if (diff >= 0) {
-          // Upcoming event
-          if (closestUpcomingDiff == null || diff < closestUpcomingDiff) {
-            closestUpcomingDiff = diff;
-            closestUpcomingIndex = i;
-          }
-        } else {
-          // Past event
-          if (closestPastDiff == null || diff.abs() < closestPastDiff) {
-            closestPastDiff = diff.abs();
-            closestPastIndex = i;
-          }
-        }
-      }
-    }
-
-    // Prefer upcoming event, fallback to past event
-    if (closestUpcomingDiff != null) {
-      closestIndex = closestUpcomingIndex;
-    } else if (closestPastDiff != null) {
-      closestIndex = closestPastIndex;
-    }
-
-    // Calculate scroll offset
-    final offset = closestIndex * _eventCardHeight;
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    
-    _scrollController.animateTo(
-      offset.clamp(0.0, maxScroll),
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeInOut,
-    );
-  }
-
 
   @override
   Widget build(BuildContext context) {
@@ -133,7 +63,7 @@ class _DailyScheduleWidgetState extends State<DailyScheduleWidget> {
             AppConstants.spacingL,
             AppConstants.spacingXXL,
             AppConstants.spacingL,
-            4, // Reduced spacing
+            AppConstants.spacingL,
           ),
           child: Row(
             children: [
@@ -181,7 +111,7 @@ class _DailyScheduleWidgetState extends State<DailyScheduleWidget> {
         const Padding(
           padding: EdgeInsets.fromLTRB(
             AppConstants.spacingL,
-            4, // Reduced spacing
+            AppConstants.spacingL,
             AppConstants.spacingL,
             AppConstants.spacingM,
           ),
@@ -202,8 +132,6 @@ class _DailyScheduleWidgetState extends State<DailyScheduleWidget> {
               : _events.isEmpty
                   ? _buildEmptyState()
                   : ListView.builder(
-                      controller: _scrollController,
-                      physics: const ClampingScrollPhysics(), // No overscroll effect
                       padding: const EdgeInsets.symmetric(
                         horizontal: AppConstants.spacingL,
                       ),
@@ -240,33 +168,112 @@ class _DailyScheduleWidgetState extends State<DailyScheduleWidget> {
     );
   }
 
+  Future<void> _deleteEvent(DailyEvent event) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xóa sự kiện'),
+        content: Text('Bạn có chắc muốn xóa sự kiện "${event.title}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Xóa'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await CalendarService.deleteEvent(event.id);
+        if (mounted) {
+          TopNotification.success(context, 'Đã xóa sự kiện');
+          _loadEvents();
+        }
+      } catch (e) {
+        if (mounted) {
+          TopNotification.error(context, 'Lỗi: $e');
+        }
+      }
+    }
+  }
+
   Widget _buildTimelineEvent(DailyEvent event) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppConstants.spacingM),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Time label
-          SizedBox(
-            width: 50,
-            child: Text(
-              event.formattedStartTime,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
+    final height = event.durationHours * 60.0; // 60px per hour
+
+    return Dismissible(
+      key: Key(event.id),
+      direction: DismissDirection.endToStart,
+      dismissThresholds: const {DismissDirection.endToStart: 0.3}, // Chỉ cần vuốt 30%
+      confirmDismiss: (_) async {
+        await _deleteEvent(event);
+        return false; // Don't dismiss automatically, we reload the list
+      },
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        margin: const EdgeInsets.only(bottom: AppConstants.spacingM),
+        decoration: BoxDecoration(
+          color: Colors.red,
+          borderRadius: BorderRadius.circular(AppConstants.radiusL),
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Icon(Icons.delete, color: Colors.white, size: 28),
+            SizedBox(width: 8),
+            Text('Xóa', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            SizedBox(width: 16),
+          ],
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: AppConstants.spacingM),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+            // Time label
+            SizedBox(
+              width: 65,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    event.formattedStartTime,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  Text(
+                    event.formattedEndTime,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-          const SizedBox(width: AppConstants.spacingM),
+            const SizedBox(width: AppConstants.spacingM),
           
           // Event card
           Expanded(
             child: Container(
-              constraints: BoxConstraints(
-                minHeight: event.durationHours * 50.0 > 100 
-                    ? event.durationHours * 50.0 
-                    : 100,
-              ),
+              height: event.durationHours <= 0.5 
+                  ? 60.0  // 30 min or less
+                  : event.durationHours <= 1.0 
+                      ? 90.0  // 1 hour
+                      : (event.durationHours * 80.0).clamp(90.0, 250.0), // > 1 hour
               padding: const EdgeInsets.all(AppConstants.spacingM),
               decoration: BoxDecoration(
                 gradient: AppConstants.dashboardAppBarGradient,
@@ -274,44 +281,52 @@ class _DailyScheduleWidgetState extends State<DailyScheduleWidget> {
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    event.title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: AppConstants.spacingS),
-                  Text(
-                    event.subtitle,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.white,
+                  Flexible(
+                    child: Text(
+                      event.title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const SizedBox(height: AppConstants.spacingM),
-                  // Avatars
-                  Row(
-                    children: [
-                      const Spacer(),
-                      ...event.participants.take(3).map((p) {
-                        return Padding(
-                          padding: const EdgeInsets.only(left: 4),
-                          child: _buildAvatar(p.avatarColor),
-                        );
-                      }),
-                    ],
-                  ),
+                  if (event.durationHours >= 1.0) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      event.subtitle,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors.white70,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  if (event.durationHours >= 1.0 && event.participants.isNotEmpty) ...[
+                    const Spacer(),
+                    Row(
+                      children: [
+                        const Spacer(),
+                        ...event.participants.take(3).map((p) {
+                          return Padding(
+                            padding: const EdgeInsets.only(left: 4),
+                            child: _buildAvatar(p.avatarColor),
+                          );
+                        }),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
           ),
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }

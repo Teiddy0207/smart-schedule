@@ -87,12 +87,12 @@ class _YearViewWidgetState extends State<YearViewWidget> {
                 ),
               if (widget.onBack == null) const SizedBox(width: 6),
               if (widget.onBack != null) const SizedBox(width: 6),
-              
+
               // Year navigation: < 2026 >
               _buildYearNavigator(),
-              
+
               const Spacer(),
-              
+
               // Go to current year button
               InkWell(
                 onTap: _goToCurrentYear,
@@ -188,7 +188,7 @@ class _YearViewWidgetState extends State<YearViewWidget> {
           ),
         ),
         const SizedBox(width: 8),
-        
+
         // Year text
         Text(
           '$_currentYear',
@@ -198,7 +198,7 @@ class _YearViewWidgetState extends State<YearViewWidget> {
             color: AppConstants.primaryColor,
           ),
         ),
-        
+
         const SizedBox(width: 8),
         // Next year button
         InkWell(

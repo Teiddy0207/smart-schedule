@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../services/meeting_service.dart';
+import '../../widgets/top_notification.dart';
 
 /// Model for suggested time slot
 class SuggestedSlot {
@@ -43,12 +45,16 @@ class SuggestedSlotsScreen extends StatefulWidget {
   final String eventTitle;
   final int durationMinutes;
   final List<String> participantEmails;
+  final List<String> participantIds;
+  final String timePreference; // 'morning', 'afternoon', 'evening'
 
   const SuggestedSlotsScreen({
     super.key,
     required this.eventTitle,
     required this.durationMinutes,
     required this.participantEmails,
+    this.participantIds = const [],
+    this.timePreference = '',
   });
 
   @override
@@ -61,6 +67,12 @@ class _SuggestedSlotsScreenState extends State<SuggestedSlotsScreen> {
   List<SuggestedSlot> _slots = [];
   bool _isLoading = true;
   SuggestedSlot? _selectedSlot;
+  String? _warning;
+  int _connectedCount = 0;
+  int _disconnectedCount = 0;
+  int _totalParticipants = 0;
+  DateTime _selectedDate = DateTime.now();
+  bool _workingHoursOnly = true;
 
   @override
   void initState() {
@@ -68,47 +80,105 @@ class _SuggestedSlotsScreenState extends State<SuggestedSlotsScreen> {
     _loadSuggestedSlots();
   }
 
+  void _showDatePicker() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 30)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(primary: _primaryColor),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+        _selectedSlot = null;
+      });
+      _loadSuggestedSlots();
+    }
+  }
+
   Future<void> _loadSuggestedSlots() async {
     setState(() => _isLoading = true);
 
-    // TODO: Call backend API to get suggested slots
-    // For now, generate mock data
-    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      // Format selected date for API (YYYY-MM-DD)
+      final dateStr = '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
+      
+      // Call backend API to get suggested slots with status
+      final response = await MeetingService.getSuggestedSlotsWithStatus(
+        userIds: widget.participantIds,
+        durationMinutes: widget.durationMinutes,
+        daysAhead: 1, // Only search for the selected day
+        workingHoursOnly: _workingHoursOnly,
+        startDate: dateStr,
+        timePreference: widget.timePreference,
+      );
 
+      final slotsData = response['slots'] as List<dynamic>? ?? [];
+      final loadedSlots = <SuggestedSlot>[];
+      for (int i = 0; i < slotsData.length; i++) {
+        final data = slotsData[i] as Map<String, dynamic>;
+        loadedSlots.add(SuggestedSlot(
+          id: 'slot_$i',
+          startTime: DateTime.parse(data['start_time'] as String).toLocal(),
+          endTime: DateTime.parse(data['end_time'] as String).toLocal(),
+          score: data['score'] as int? ?? 0,
+          availableCount: data['available_count'] as int? ?? 0,
+          totalCount: data['total_count'] as int? ?? 1,
+        ));
+      }
+
+      setState(() {
+        _slots = loadedSlots;
+        _warning = response['warning'] as String?;
+        _connectedCount = response['connected_count'] as int? ?? 0;
+        _disconnectedCount = response['disconnected_count'] as int? ?? 0;
+        _totalParticipants = response['total_participants'] as int? ?? 0;
+        _isLoading = false;
+      });
+    } catch (e) {
+      // Fallback to mock data if API fails
+      debugPrint('API failed, using mock data: $e');
+      _loadMockSlots();
+    }
+  }
+
+  void _loadMockSlots() {
     final now = DateTime.now();
     final mockSlots = <SuggestedSlot>[];
 
-    // Generate slots for next 7 days
     for (int i = 1; i <= 7; i++) {
       final date = now.add(Duration(days: i));
-      
-      // Skip weekends if preference set
       if (date.weekday == DateTime.saturday || date.weekday == DateTime.sunday) {
         continue;
       }
 
-      // Add morning slot
       mockSlots.add(SuggestedSlot(
         id: 'slot_${i}_morning',
         startTime: DateTime(date.year, date.month, date.day, 8, 30),
-        endTime: DateTime(date.year, date.month, date.day, 9, 30),
+        endTime: DateTime(date.year, date.month, date.day, 8, 30).add(Duration(minutes: widget.durationMinutes)),
         score: 100 - i * 10,
         availableCount: widget.participantEmails.length,
         totalCount: widget.participantEmails.length,
       ));
 
-      // Add afternoon slot
       mockSlots.add(SuggestedSlot(
         id: 'slot_${i}_afternoon',
         startTime: DateTime(date.year, date.month, date.day, 14, 0),
-        endTime: DateTime(date.year, date.month, date.day, 15, 0),
+        endTime: DateTime(date.year, date.month, date.day, 14, 0).add(Duration(minutes: widget.durationMinutes)),
         score: 90 - i * 10,
         availableCount: widget.participantEmails.length,
         totalCount: widget.participantEmails.length,
       ));
     }
 
-    // Sort by score
     mockSlots.sort((a, b) => b.score.compareTo(a.score));
 
     setState(() {
@@ -126,7 +196,7 @@ class _SuggestedSlotsScreenState extends State<SuggestedSlotsScreen> {
     });
   }
 
-  void _confirmSelection() {
+  Future<void> _confirmSelection() async {
     if (_selectedSlot == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -137,8 +207,44 @@ class _SuggestedSlotsScreenState extends State<SuggestedSlotsScreen> {
       return;
     }
 
-    // Return selected slot to previous screen
-    Navigator.pop(context, _selectedSlot);
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      // Create event with selected slot - this will also create invitations for attendees
+      final result = await MeetingService.createCalendarEvent(
+        title: widget.eventTitle,
+        startTime: _selectedSlot!.startTime.toIso8601String(),
+        endTime: _selectedSlot!.endTime.toIso8601String(),
+        attendees: widget.participantEmails,
+      );
+
+      // Close loading dialog
+      if (mounted) Navigator.pop(context);
+
+      // ApiService returns data directly when success (no 'success' wrapper)
+      // Check if event_id exists to confirm success
+      if (result != null && (result['event_id'] != null || result['data'] != null)) {
+        // Pop all screens back to MainScreen (dashboard) first
+        if (mounted) {
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        }
+        
+        // Show top notification after navigation
+        TopNotification.success(context, 'Đã tạo sự kiện và gửi lời mời thành công!');
+      } else {
+        TopNotification.error(context, 'Lỗi: ${result['message'] ?? 'Không thể tạo sự kiện'}');
+      }
+    } catch (e) {
+      // Close loading dialog
+      if (mounted) Navigator.pop(context);
+      
+      TopNotification.error(context, 'Lỗi: $e');
+    }
   }
 
   @override
@@ -216,7 +322,131 @@ class _SuggestedSlotsScreenState extends State<SuggestedSlotsScreen> {
             ),
           ),
 
-          const SizedBox(height: 20),
+          // Date picker row
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: GestureDetector(
+              onTap: _showDatePicker,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[300]!),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.calendar_today, color: _primaryColor, size: 20),
+                        const SizedBox(width: 12),
+                        Text(
+                          '${_selectedDate.day.toString().padLeft(2, '0')}/${_selectedDate.month.toString().padLeft(2, '0')}/${_selectedDate.year}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'Lexend',
+                          ),
+                        ),
+                      ],
+                    ),
+                    Icon(Icons.arrow_drop_down, color: Colors.grey[600]),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Working hours toggle
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        _workingHoursOnly ? Icons.work_outline : Icons.schedule,
+                        color: _primaryColor,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        _workingHoursOnly ? 'Giờ làm việc (8h-18h)' : 'Cả ngày (6h-23h)',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontFamily: 'Lexend',
+                        ),
+                      ),
+                    ],
+                  ),
+                  Switch(
+                    value: !_workingHoursOnly,
+                    onChanged: (value) {
+                      setState(() {
+                        _workingHoursOnly = !value;
+                        _selectedSlot = null;
+                      });
+                      _loadSuggestedSlots();
+                    },
+                    activeColor: _primaryColor,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Connection status info
+          if (_totalParticipants > 0)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Text(
+                '$_connectedCount/$_totalParticipants người đã kết nối lịch',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[500],
+                  fontFamily: 'Lexend',
+                ),
+              ),
+            ),
+
+          // Warning banner for disconnected users
+          if (_warning != null && _warning!.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange[50],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.orange[200]!),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, color: Colors.orange[700], size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _warning!,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.orange[900],
+                        fontFamily: 'Lexend',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          const SizedBox(height: 8),
 
           // Slots list
           Expanded(

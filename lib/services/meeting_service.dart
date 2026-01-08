@@ -32,6 +32,34 @@ class MeetingService {
     return await ApiService.post(_basePath, body: body);
   }
 
+  /// Create a Google Calendar event
+  /// POST /api/v1/private/calendar/events
+  static Future<Map<String, dynamic>> createCalendarEvent({
+    required String title,
+    String? description,
+    required String startTime,
+    required String endTime,
+    String? location,
+    List<String>? attendees,
+    String? meetingLink,
+    String? timezone,
+  }) async {
+    AppLogger.info('Creating calendar event: $title', tag: _tag);
+    
+    final body = {
+      'title': title,
+      'description': description ?? '',
+      'start_time': startTime,
+      'end_time': endTime,
+      'location': location ?? '',
+      'attendees': attendees ?? [],
+      'meeting_link': meetingLink ?? '',
+      'timezone': timezone ?? 'Asia/Ho_Chi_Minh', // Default to VN timezone
+    };
+
+    return await ApiService.post('/api/v1/private/calendar/events', body: body);
+  }
+
   /// Get all meetings for current user
   /// GET /api/v1/private/meetings
   static Future<Map<String, dynamic>> getMyMeetings({
@@ -123,5 +151,63 @@ class MeetingService {
   static Future<Map<String, dynamic>> sendInvitations(String meetingId) async {
     AppLogger.info('Sending invitations for meeting: $meetingId', tag: _tag);
     return await ApiService.post('$_basePath/$meetingId/send-invitations');
+  }
+
+  /// Get suggested meeting slots based on participants' availability
+  /// POST /api/v1/private/calendar/suggested-slots
+  /// Returns full response including slots, warning, and connection status
+  static Future<Map<String, dynamic>> getSuggestedSlotsWithStatus({
+    required List<String> userIds,
+    required int durationMinutes,
+    int daysAhead = 7,
+    bool workingHoursOnly = true,
+    String? startDate,
+    String? timePreference,
+  }) async {
+    AppLogger.info('Getting suggested slots for ${userIds.length} users, date: $startDate, preference: $timePreference', tag: _tag);
+    
+    try {
+      final body = <String, dynamic>{
+        'user_ids': userIds,
+        'duration_minutes': durationMinutes,
+        'days_ahead': daysAhead,
+        'working_hours_only': workingHoursOnly,
+      };
+      if (startDate != null) {
+        body['start_date'] = startDate;
+      }
+      if (timePreference != null && timePreference.isNotEmpty) {
+        body['time_preference'] = timePreference;
+      }
+      
+      final response = await ApiService.post(
+        '/api/v1/private/calendar/suggested-slots',
+        body: body,
+      );
+
+      return response;
+    } catch (e) {
+      AppLogger.error('Failed to get suggested slots', tag: _tag, error: e);
+      rethrow;
+    }
+  }
+
+  /// Legacy method - returns only slots list
+  static Future<List<Map<String, dynamic>>> getSuggestedSlots({
+    required List<String> userIds,
+    required int durationMinutes,
+    int daysAhead = 7,
+    bool workingHoursOnly = true,
+  }) async {
+    final response = await getSuggestedSlotsWithStatus(
+      userIds: userIds,
+      durationMinutes: durationMinutes,
+      daysAhead: daysAhead,
+      workingHoursOnly: workingHoursOnly,
+    );
+    if (response['slots'] != null) {
+      return List<Map<String, dynamic>>.from(response['slots']);
+    }
+    return [];
   }
 }

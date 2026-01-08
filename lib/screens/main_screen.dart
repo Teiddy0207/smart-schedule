@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide debugPrint;
 import 'package:provider/provider.dart';
 import 'dashboard/dashboard_screen_content.dart';
 import 'group/group_screen_content.dart';
@@ -6,8 +6,10 @@ import 'group/create_group.dart';
 import 'profile/profile_screen_content.dart';
 import 'event/create_event_screen.dart';
 import 'calendar/calendar_screen_content.dart';
+import 'notification/notification_screen.dart';
 import '../providers/auth_provider.dart';
 import '../constants/app_constants.dart';
+import '../services/notification_service.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -18,6 +20,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
+  int _notificationCount = 0;
 
   // Danh sách các body tương ứng - THỨ TỰ GIỐNG BOTTOM NAV
   late final List<Widget> _screens = const [
@@ -26,6 +29,21 @@ class _MainScreenState extends State<MainScreen> {
     GroupScreenContent(),       // Nhóm
     ProfileScreenContent(),     // Cá nhân
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotificationCount();
+  }
+
+  Future<void> _loadNotificationCount() async {
+    final count = await NotificationService.getPendingCount();
+    if (mounted) {
+      setState(() {
+        _notificationCount = count;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,15 +111,52 @@ class _MainScreenState extends State<MainScreen> {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    CircleAvatar(
-                      backgroundColor: Colors.white24,
-                      child: IconButton(
-                        icon: const Icon(
-                          Icons.notifications_outlined,
-                          color: Colors.white,
+                    Stack(
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: Colors.white24,
+                          child: IconButton(
+                            icon: const Icon(
+                              Icons.notifications_outlined,
+                              color: Colors.white,
+                            ),
+                            onPressed: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const NotificationScreen(),
+                                ),
+                              );
+                              _loadNotificationCount();
+                            },
+                          ),
                         ),
-                        onPressed: () {},
-                      ),
+                        if (_notificationCount > 0)
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              constraints: const BoxConstraints(
+                                minWidth: 18,
+                                minHeight: 18,
+                              ),
+                              child: Text(
+                                _notificationCount > 99 ? '99+' : '$_notificationCount',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ],
                 ),
@@ -340,18 +395,154 @@ class _MainScreenState extends State<MainScreen> {
       width: 56,
       margin: const EdgeInsets.only(top: 30),
       child: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          final result = await Navigator.push<bool>(
             context,
             MaterialPageRoute(
               builder: (context) => const CreateEventScreen(),
             ),
           );
+          
+          // Show success message if event was created
+          if (result == true && mounted) {
+            _showTopNotification('Sự kiện đã được tạo thành công!');
+          }
         },
         backgroundColor: AppConstants.gradientEnd,
         elevation: 4,
         shape: const CircleBorder(),
         child: const Icon(Icons.add, color: Colors.white, size: 28),
+      ),
+    );
+  }
+
+  void _showTopNotification(String message) {
+    late OverlayEntry overlayEntry;
+    
+    overlayEntry = OverlayEntry(
+      builder: (context) => _TopNotification(
+        message: message,
+        onDismiss: () {
+          overlayEntry.remove();
+        },
+      ),
+    );
+    
+    Overlay.of(context).insert(overlayEntry);
+  }
+}
+
+class _TopNotification extends StatefulWidget {
+  final String message;
+  final VoidCallback onDismiss;
+
+  const _TopNotification({
+    required this.message,
+    required this.onDismiss,
+  });
+
+  @override
+  State<_TopNotification> createState() => _TopNotificationState();
+}
+
+class _TopNotificationState extends State<_TopNotification>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, -1),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOut,
+    ));
+
+    _controller.forward();
+
+    // Auto dismiss after 3 seconds
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        _dismiss();
+      }
+    });
+  }
+
+  void _dismiss() {
+    _controller.reverse().then((_) {
+      widget.onDismiss();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      child: SlideTransition(
+        position: _slideAnimation,
+        child: SafeArea(
+          child: GestureDetector(
+            onTap: _dismiss,
+            onVerticalDragEnd: (details) {
+              if (details.velocity.pixelsPerSecond.dy < 0) {
+                _dismiss();
+              }
+            },
+            child: Center(
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4CAF50),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.check_circle,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      widget.message,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Lexend',
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
