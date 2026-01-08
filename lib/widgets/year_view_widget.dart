@@ -1,20 +1,27 @@
 import 'package:flutter/material.dart';
 import '../../constants/app_constants.dart';
 
-/// Widget hiển thị dashboard năm với grid 12 tháng
-class YearViewWidget extends StatelessWidget {
-  final int year;
+/// Widget hiển thị dashboard năm với grid 12 tháng và navigation giữa các năm
+class YearViewWidget extends StatefulWidget {
+  final int initialYear;
   final int? selectedMonth;
-  final Function(int)? onMonthSelected;
+  final Function(int month, int year)? onMonthSelected;
   final VoidCallback? onBack;
 
   const YearViewWidget({
     super.key,
-    required this.year,
+    required this.initialYear,
     this.selectedMonth,
     this.onMonthSelected,
     this.onBack,
   });
+
+  @override
+  State<YearViewWidget> createState() => _YearViewWidgetState();
+}
+
+class _YearViewWidgetState extends State<YearViewWidget> {
+  late int _currentYear;
 
   // Tên các tháng tiếng Việt
   static const List<String> _monthNames = [
@@ -24,6 +31,30 @@ class YearViewWidget extends StatelessWidget {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _currentYear = widget.initialYear;
+  }
+
+  void _previousYear() {
+    setState(() {
+      _currentYear--;
+    });
+  }
+
+  void _nextYear() {
+    setState(() {
+      _currentYear++;
+    });
+  }
+
+  void _goToCurrentYear() {
+    setState(() {
+      _currentYear = DateTime.now().year;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final currentMonth = DateTime.now().month;
     final currentYear = DateTime.now().year;
@@ -31,7 +62,7 @@ class YearViewWidget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header với năm
+        // Header với năm và navigation
         Padding(
           padding: const EdgeInsets.fromLTRB(
             AppConstants.spacingL,
@@ -41,9 +72,9 @@ class YearViewWidget extends StatelessWidget {
           ),
           child: Row(
             children: [
-              if (onBack != null)
+              if (widget.onBack != null)
                 InkWell(
-                  onTap: onBack,
+                  onTap: widget.onBack,
                   borderRadius: BorderRadius.circular(AppConstants.radiusM),
                   child: const Padding(
                     padding: EdgeInsets.all(AppConstants.spacingS),
@@ -54,23 +85,17 @@ class YearViewWidget extends StatelessWidget {
                     ),
                   ),
                 ),
-              // Placeholder để căn thẳng hàng với các views có nút back
-              if (onBack == null)
-                const SizedBox(width: 6),
-              if (onBack != null) const SizedBox(width: 6),
-              Text(
-                '$year',
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppConstants.primaryColor,
-                ),
-              ),
+              if (widget.onBack == null) const SizedBox(width: 6),
+              if (widget.onBack != null) const SizedBox(width: 6),
+
+              // Year navigation: < 2026 >
+              _buildYearNavigator(),
+
               const Spacer(),
+
+              // Go to current year button
               InkWell(
-                onTap: () {
-                  // Refresh về năm hiện tại
-                },
+                onTap: _goToCurrentYear,
                 borderRadius: BorderRadius.circular(AppConstants.radiusCircle),
                 child: Container(
                   padding: const EdgeInsets.all(AppConstants.spacingM),
@@ -79,7 +104,7 @@ class YearViewWidget extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
-                    Icons.refresh,
+                    Icons.today,
                     color: AppConstants.primaryColor,
                     size: AppConstants.iconSizeMedium,
                   ),
@@ -103,11 +128,11 @@ class YearViewWidget extends StatelessWidget {
               itemCount: 12,
               itemBuilder: (context, index) {
                 final month = index + 1;
-                final isCurrentMonth = month == currentMonth && year == currentYear;
+                final isCurrentMonth = month == currentMonth && _currentYear == currentYear;
 
                 return InkWell(
                   onTap: () {
-                    onMonthSelected?.call(month);
+                    widget.onMonthSelected?.call(month, _currentYear);
                   },
                   borderRadius: BorderRadius.circular(AppConstants.radiusL),
                   child: Container(
@@ -137,6 +162,54 @@ class YearViewWidget extends StatelessWidget {
                   ),
                 );
               },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Build year navigator with prev/next buttons
+  Widget _buildYearNavigator() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Previous year button
+        InkWell(
+          onTap: _previousYear,
+          borderRadius: BorderRadius.circular(AppConstants.radiusM),
+          child: const Padding(
+            padding: EdgeInsets.all(4),
+            child: Icon(
+              Icons.arrow_back_ios,
+              color: AppConstants.primaryColor,
+              size: 18,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+
+        // Year text
+        Text(
+          '$_currentYear',
+          style: const TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: AppConstants.primaryColor,
+          ),
+        ),
+
+        const SizedBox(width: 8),
+        // Next year button
+        InkWell(
+          onTap: _nextYear,
+          borderRadius: BorderRadius.circular(AppConstants.radiusM),
+          child: const Padding(
+            padding: EdgeInsets.all(4),
+            child: Icon(
+              Icons.arrow_forward_ios,
+              color: AppConstants.primaryColor,
+              size: 18,
             ),
           ),
         ),

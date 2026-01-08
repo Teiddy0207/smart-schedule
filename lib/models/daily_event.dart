@@ -158,21 +158,28 @@ class DailyEvent {
   }
 
   /// Tính duration (số giờ) từ startTime và endTime
-  int get durationHours {
-    final start = _parseTime(startTime);
-    final end = _parseTime(endTime);
-    final diff = end - start;
-    return diff > 0 ? diff : 1;
+  double get durationHours {
+    final startMinutes = _parseTimeToMinutes(startTime);
+    final endMinutes = _parseTimeToMinutes(endTime);
+    final diffMinutes = endMinutes - startMinutes;
+    return diffMinutes > 0 ? diffMinutes / 60.0 : 1.0;
   }
 
-  /// Parse time string "HH:mm" thành hour number
-  int _parseTime(String time) {
+  /// Parse time string "HH:mm" thành total minutes
+  int _parseTimeToMinutes(String time) {
     final parts = time.split(':');
-    return int.parse(parts[0]);
+    final hours = int.parse(parts[0]);
+    final minutes = parts.length > 1 ? int.parse(parts[1]) : 0;
+    return hours * 60 + minutes;
   }
 
   /// Format startTime để hiển thị (ví dụ: "08.00")
   String get formattedStartTime {
     return startTime.replaceAll(':', '.');
+  }
+
+  /// Format endTime để hiển thị (ví dụ: "09.30")
+  String get formattedEndTime {
+    return endTime.replaceAll(':', '.');
   }
 }

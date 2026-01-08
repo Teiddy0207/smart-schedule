@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/meeting_service.dart';
 import '../../widgets/user_search_widget.dart';
 import '../../services/user_search_service.dart';
 import 'suggested_slots_screen.dart';
@@ -20,6 +21,11 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
 
   // Selected participants
   List<UserSearchResult> _selectedParticipants = [];
+
+  // Manual selection state
+  DateTime _manualDate = DateTime.now();
+  TimeOfDay _manualStartTime = const TimeOfDay(hour: 9, minute: 0);
+  TimeOfDay _manualEndTime = const TimeOfDay(hour: 10, minute: 0);
 
   // Primary color - đồng bộ với app
   static const _primaryColor = Color(0xFF6C63FF);
@@ -83,7 +89,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           Container(
             margin: const EdgeInsets.only(right: 12),
             child: ElevatedButton.icon(
-              onPressed: _handleSuggestSchedule,
+              onPressed: _selectedParticipants.isNotEmpty ? _handleSuggestSchedule : null,
               icon: const Icon(Icons.auto_awesome, size: 18),
               label: const Text(
                 'Đề xuất',
@@ -93,13 +99,15 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: _primaryColor,
-                foregroundColor: Colors.white,
+                backgroundColor: _selectedParticipants.isNotEmpty ? _primaryColor : Colors.grey[300],
+                foregroundColor: _selectedParticipants.isNotEmpty ? Colors.white : Colors.grey[500],
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
+                disabledBackgroundColor: Colors.grey[200],
+                disabledForegroundColor: Colors.grey[400],
               ),
             ),
           ),
@@ -121,32 +129,35 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                     children: [
                       _buildFormCard(),
                       const SizedBox(height: 16),
-                      _buildTimeOptionsCard(),
-                      const SizedBox(height: 16),
+                      if (_selectedParticipants.isNotEmpty) ...[
+                        _buildTimeOptionsCard(),
+                        const SizedBox(height: 16),
+                      ],
                     ],
                   ),
                 ),
               ),
             ),
           ),
-          // Fixed footer buttons
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
-                  blurRadius: 10,
-                  offset: const Offset(0, -2),
-                ),
-              ],
+          // Fixed footer buttons - Hide if participants selected
+          if (_selectedParticipants.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 10,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                top: false,
+                child: _buildFooterButtons(),
+              ),
             ),
-            child: SafeArea(
-              top: false,
-              child: _buildFooterButtons(),
-            ),
-          ),
         ],
       ),
     );
@@ -188,34 +199,88 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           ),
           const SizedBox(height: 20),
 
-          // Duration and Priority row - FIX OVERFLOW
-          Row(
-            children: [
-              Expanded(
-                child: _buildDropdownField(
-                  label: 'Thời lượng',
-                  value: _selectedDuration,
-                  items: _durationOptions,
-                  icon: Icons.schedule,
-                  onChanged: (value) {
-                    setState(() => _selectedDuration = value!);
-                  },
+          // Manual Date/Time selection or Duration/Priority
+          if (_selectedParticipants.isNotEmpty)
+            Row(
+              children: [
+                Expanded(
+                  child: _buildDropdownField(
+                    label: 'Thời lượng',
+                    value: _selectedDuration,
+                    items: _durationOptions,
+                    icon: Icons.schedule,
+                    onChanged: (value) {
+                      setState(() => _selectedDuration = value!);
+                    },
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildDropdownField(
-                  label: 'Ưu tiên',
-                  value: _selectedPriority,
-                  items: _priorityOptions,
-                  icon: Icons.priority_high,
-                  onChanged: (value) {
-                    setState(() => _selectedPriority = value!);
-                  },
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildDropdownField(
+                    label: 'Ưu tiên',
+                    value: _selectedPriority,
+                    items: _priorityOptions,
+                    icon: Icons.priority_high,
+                    onChanged: (value) {
+                      setState(() => _selectedPriority = value!);
+                    },
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            )
+          else
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Date
+                GestureDetector(
+                  onTap: () => _selectDate(context),
+                  child: AbsorbPointer(
+                    child: _buildTextField(
+                      controller: TextEditingController(text: _formatDate(_manualDate)),
+                      label: 'Ngày',
+                      hintText: 'Chọn ngày',
+                      prefixIcon: Icons.calendar_today,
+                      isRequired: true,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                
+                // Time
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => _selectTime(context, true),
+                        child: AbsorbPointer(
+                          child: _buildTextField(
+                            controller: TextEditingController(text: _formatTime(_manualStartTime)),
+                            label: 'Bắt đầu',
+                            hintText: '09:00',
+                            prefixIcon: Icons.access_time,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => _selectTime(context, false),
+                        child: AbsorbPointer(
+                          child: _buildTextField(
+                            controller: TextEditingController(text: _formatTime(_manualEndTime)),
+                            label: 'Kết thúc',
+                            hintText: '10:00',
+                            prefixIcon: Icons.access_time_filled,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           const SizedBox(height: 20),
 
           // Participants section
@@ -554,6 +619,20 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       durationMinutes = 180;
     }
 
+    // Helper to convert priority display text to API value
+    String _getTimePreferenceValue(String priority) {
+      switch (priority) {
+        case 'Sáng':
+          return 'morning';
+        case 'Chiều':
+          return 'afternoon';
+        case 'Tối':
+          return 'evening';
+        default:
+          return '';
+      }
+    }
+
     // Navigate to suggested slots screen
     final selectedSlot = await Navigator.push<SuggestedSlot>(
       context,
@@ -562,6 +641,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           eventTitle: _titleController.text,
           durationMinutes: durationMinutes,
           participantEmails: _selectedParticipants.map((p) => p.email).toList(),
+          participantIds: _selectedParticipants.map((p) => p.id).toList(),
+          timePreference: _getTimePreferenceValue(_selectedPriority),
         ),
       ),
     );
@@ -577,33 +658,144 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     }
   }
 
-  void _handleAddEvent() {
+  void _handleAddEvent() async {
     if (_formKey.currentState!.validate()) {
-      // Collect event data
-      final eventData = {
-        'title': _titleController.text,
-        'location': _locationController.text,
-        'duration': _selectedDuration,
-        'priority': _selectedPriority,
-        'group': _groupController.text,
-        'participants': _selectedParticipants.map((u) => u.email).toList(),
-        'participant_ids': _selectedParticipants.map((u) => u.id).toList(),
-        'url': _urlController.text,
-        'notes': _notesController.text,
-        'timeOptions': _timeOptions,
-      };
-
-      // TODO: Call API to create event
-      debugPrint('Creating event: $eventData');
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Sự kiện đã được tạo thành công!'),
-          backgroundColor: Colors.green,
-        ),
+      // Show loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
       );
 
-      Navigator.pop(context);
+      try {
+        final startTime = DateTime(
+          _manualDate.year, 
+          _manualDate.month, 
+          _manualDate.day, 
+          _manualStartTime.hour, 
+          _manualStartTime.minute
+        );
+
+        final endTime = DateTime(
+          _manualDate.year, 
+          _manualDate.month, 
+          _manualDate.day, 
+          _manualEndTime.hour, 
+          _manualEndTime.minute
+        );
+
+        // Call API
+        // Format times in RFC3339 with timezone offset for Google Calendar API
+        final timezoneOffset = DateTime.now().timeZoneOffset;
+        final offsetHours = timezoneOffset.inHours.abs().toString().padLeft(2, '0');
+        final offsetMinutes = (timezoneOffset.inMinutes.abs() % 60).toString().padLeft(2, '0');
+        final offsetSign = timezoneOffset.isNegative ? '-' : '+';
+        final formattedOffset = '$offsetSign$offsetHours:$offsetMinutes';
+        
+        final startTimeStr = '${startTime.toIso8601String().split('.')[0]}$formattedOffset';
+        final endTimeStr = '${endTime.toIso8601String().split('.')[0]}$formattedOffset';
+        
+        debugPrint('Creating event: $startTimeStr to $endTimeStr');
+        
+        await MeetingService.createCalendarEvent(
+          title: _titleController.text,
+          startTime: startTimeStr,
+          endTime: endTimeStr,
+          description: _notesController.text,
+          location: _locationController.text,
+          attendees: _selectedParticipants.map((u) => u.email).toList(),
+          meetingLink: _urlController.text,
+          timezone: 'Asia/Ho_Chi_Minh',
+        );
+
+        if (mounted) {
+          // Hide loading
+          Navigator.pop(context); 
+          
+          // Close screen (toast notification is already shown from system)
+          Navigator.pop(context, true);
+        }
+      } catch (e) {
+        if (mounted) {
+          // Hide loading
+          Navigator.pop(context);
+          
+          // Show error
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Lỗi khi tạo sự kiện: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     }
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _manualDate,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: _primaryColor,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null && picked != _manualDate) {
+      setState(() {
+        _manualDate = picked;
+      });
+    }
+  }
+
+  Future<void> _selectTime(BuildContext context, bool isStart) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: isStart ? _manualStartTime : _manualEndTime,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: _primaryColor,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        if (isStart) {
+          _manualStartTime = picked;
+          // Auto update end time if it's before start time
+          if (_manualEndTime.hour < picked.hour || 
+              (_manualEndTime.hour == picked.hour && _manualEndTime.minute < picked.minute)) {
+            _manualEndTime = TimeOfDay(
+              hour: (picked.hour + 1) % 24, 
+              minute: picked.minute
+            );
+          }
+        } else {
+          _manualEndTime = picked;
+        }
+      });
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+
+  String _formatTime(TimeOfDay time) {
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 }

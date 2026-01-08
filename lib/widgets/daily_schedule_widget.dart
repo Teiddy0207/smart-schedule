@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../../constants/app_constants.dart';
 import '../../utils/date_formatter.dart';
-import '../../providers/auth_provider.dart';
-import '../../services/google_calendar_service.dart';
+import '../../models/daily_event.dart';
+import '../../services/event_service.dart';
+import '../../services/calendar_service.dart';
+import 'top_notification.dart';
 
 /// Widget hiển thị lịch theo ngày với timeline
 class DailyScheduleWidget extends StatefulWidget {
@@ -22,9 +22,8 @@ class DailyScheduleWidget extends StatefulWidget {
 }
 
 class _DailyScheduleWidgetState extends State<DailyScheduleWidget> {
-  List<GoogleCalendarEvent> _events = [];
+  List<DailyEvent> _events = [];
   bool _isLoading = true;
-  String? _errorMessage;
 
   @override
   void initState() {
@@ -41,66 +40,16 @@ class _DailyScheduleWidgetState extends State<DailyScheduleWidget> {
   }
 
   Future<void> _loadEvents() async {
-    if (!mounted) return;
-    
     setState(() {
       _isLoading = true;
-      _errorMessage = null;
     });
 
-    try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      
-      // Tính toán timeMin và timeMax cho ngày được chọn
-      final selectedDate = widget.selectedDate;
-      final startOfDay = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 0, 0, 0);
-      final endOfDay = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 23, 59, 59);
-      
-      final response = await GoogleCalendarService.getCalendarEvents(
-        authProvider: authProvider,
-        timeMin: startOfDay,
-        timeMax: endOfDay,
-        maxResults: 50,
-      );
-
-      if (!mounted) return;
-
-      if (response.error != null) {
-        setState(() {
-          _errorMessage = response.error;
-          _isLoading = false;
-        });
-      } else {
-        // Filter chỉ lấy events của ngày được chọn
-        final selectedYear = selectedDate.year;
-        final selectedMonth = selectedDate.month;
-        final selectedDay = selectedDate.day;
-        
-        final filteredEvents = response.events.where((event) {
-          if (event.start == null) return false;
-          final eventDate = event.start!.toLocal();
-          return eventDate.year == selectedYear &&
-                 eventDate.month == selectedMonth &&
-                 eventDate.day == selectedDay;
-        }).toList();
-        
-        setState(() {
-          _events = filteredEvents;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _errorMessage = e.toString().replaceFirst('Exception: ', '');
-        _isLoading = false;
-      });
-    }
-  }
-
-  String _formatTime(DateTime? dateTime) {
-    if (dateTime == null) return '';
-    return DateFormat('HH:mm').format(dateTime.toLocal());
+    final events = await EventService.getEventsForDate(widget.selectedDate);
+    
+    setState(() {
+      _events = events;
+      _isLoading = false;
+    });
   }
 
   @override
@@ -178,218 +127,206 @@ class _DailyScheduleWidgetState extends State<DailyScheduleWidget> {
 
         // Timeline với events
         Expanded(
-          child: _buildEventsList(),
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _events.isEmpty
+                  ? _buildEmptyState()
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppConstants.spacingL,
+                      ),
+                      itemCount: _events.length,
+                      itemBuilder: (context, index) {
+                        return _buildTimelineEvent(_events[index]);
+                      },
+                    ),
         ),
       ],
     );
   }
 
-  Widget _buildEventsList() {
-    if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(
-          color: AppConstants.primaryColor,
-        ),
-      );
-    }
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.event_available,
+            size: 64,
+            color: Colors.grey[400],
+          ),
+          const SizedBox(height: AppConstants.spacingM),
+          Text(
+            'Không có sự kiện nào',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-    if (_errorMessage != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppConstants.spacingL),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+  Future<void> _deleteEvent(DailyEvent event) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xóa sự kiện'),
+        content: Text('Bạn có chắc muốn xóa sự kiện "${event.title}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Xóa'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await CalendarService.deleteEvent(event.id);
+        if (mounted) {
+          TopNotification.success(context, 'Đã xóa sự kiện');
+          _loadEvents();
+        }
+      } catch (e) {
+        if (mounted) {
+          TopNotification.error(context, 'Lỗi: $e');
+        }
+      }
+    }
+  }
+
+  Widget _buildTimelineEvent(DailyEvent event) {
+    final height = event.durationHours * 60.0; // 60px per hour
+
+    return Dismissible(
+      key: Key(event.id),
+      direction: DismissDirection.endToStart,
+      dismissThresholds: const {DismissDirection.endToStart: 0.3}, // Chỉ cần vuốt 30%
+      confirmDismiss: (_) async {
+        await _deleteEvent(event);
+        return false; // Don't dismiss automatically, we reload the list
+      },
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        margin: const EdgeInsets.only(bottom: AppConstants.spacingM),
+        decoration: BoxDecoration(
+          color: Colors.red,
+          borderRadius: BorderRadius.circular(AppConstants.radiusL),
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Icon(Icons.delete, color: Colors.white, size: 28),
+            SizedBox(width: 8),
+            Text('Xóa', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            SizedBox(width: 16),
+          ],
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: AppConstants.spacingM),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Icon(
-                Icons.error_outline,
-                size: 64,
-                color: Colors.red,
+            // Time label
+            SizedBox(
+              width: 65,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    event.formattedStartTime,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  Text(
+                    event.formattedEndTime,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: AppConstants.spacingM),
-              const Text(
-                'Lỗi khi tải lịch',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+            ),
+            const SizedBox(width: AppConstants.spacingM),
+          
+          // Event card
+          Expanded(
+            child: Container(
+              height: event.durationHours <= 0.5 
+                  ? 60.0  // 30 min or less
+                  : event.durationHours <= 1.0 
+                      ? 90.0  // 1 hour
+                      : (event.durationHours * 80.0).clamp(90.0, 250.0), // > 1 hour
+              padding: const EdgeInsets.all(AppConstants.spacingM),
+              decoration: BoxDecoration(
+                gradient: AppConstants.dashboardAppBarGradient,
+                borderRadius: BorderRadius.circular(AppConstants.radiusL),
               ),
-              const SizedBox(height: AppConstants.spacingS),
-              Text(
-                _errorMessage!,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Flexible(
+                    child: Text(
+                      event.title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (event.durationHours >= 1.0) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      event.subtitle,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors.white70,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  if (event.durationHours >= 1.0 && event.participants.isNotEmpty) ...[
+                    const Spacer(),
+                    Row(
+                      children: [
+                        const Spacer(),
+                        ...event.participants.take(3).map((p) {
+                          return Padding(
+                            padding: const EdgeInsets.only(left: 4),
+                            child: _buildAvatar(p.avatarColor),
+                          );
+                        }),
+                      ],
+                    ),
+                  ],
+                ],
               ),
-              const SizedBox(height: AppConstants.spacingM),
-              ElevatedButton(
-                onPressed: _loadEvents,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppConstants.primaryColor,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text('Thử lại'),
-              ),
+            ),
+          ),
             ],
           ),
         ),
-      );
-    }
-
-    // Group events theo giờ bắt đầu
-    final Map<int, List<GoogleCalendarEvent>> eventsByHour = {};
-    for (var event in _events) {
-      if (event.start != null) {
-        final hour = event.start!.toLocal().hour;
-        if (!eventsByHour.containsKey(hour)) {
-          eventsByHour[hour] = [];
-        }
-        eventsByHour[hour]!.add(event);
-      }
-    }
-
-    // Sắp xếp events trong mỗi giờ theo thời gian bắt đầu
-    eventsByHour.forEach((hour, events) {
-      events.sort((a, b) {
-        if (a.start == null && b.start == null) return 0;
-        if (a.start == null) return 1;
-        if (b.start == null) return -1;
-        return a.start!.compareTo(b.start!);
-      });
-    });
-
-    // Nếu không có events nào, hiển thị empty state
-    if (_events.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.calendar_today,
-              size: 64,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: AppConstants.spacingM),
-            Text(
-              'Không có sự kiện nào',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // Tạo timeline từ 1h đến 24h - hiển thị TẤT CẢ giờ (kể cả trống)
-    return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: AppConstants.spacingL),
-      children: List.generate(24, (index) {
-        final hour = index + 1; // Từ 1h đến 24h
-        final hourEvents = eventsByHour[hour] ?? [];
-        final timeString = '${hour.toString().padLeft(2, '0')}:00';
-        
-        if (hourEvents.isEmpty) {
-          // Không có event ở giờ này, vẫn hiển thị giờ nhưng trống
-          return _buildTimelineHour(
-            time: timeString,
-            child: const SizedBox.shrink(),
-          );
-        } else {
-          // Có events ở giờ này, hiển thị tất cả
-          return Column(
-            children: hourEvents.asMap().entries.map((entry) {
-              final isFirst = entry.key == 0;
-              return _buildTimelineHour(
-                time: isFirst ? timeString : '', // Chỉ hiển thị giờ ở event đầu tiên
-                child: _buildEventCard(entry.value),
-              );
-            }).toList(),
-          );
-        }
-      }),
-    );
-  }
-
-  Widget _buildTimelineHour({required String time, required Widget child}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppConstants.spacingM),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 50,
-            child: Text(
-              time,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
-              textAlign: TextAlign.right,
-            ),
-          ),
-          const SizedBox(width: AppConstants.spacingM),
-          Expanded(child: child),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEventCard(GoogleCalendarEvent event) {
-    // Tính duration
-    Duration? duration;
-    if (event.start != null && event.end != null) {
-      duration = event.end!.difference(event.start!);
-    }
-    final durationHours = duration != null ? duration.inMinutes / 60.0 : 1.0;
-
-    return Container(
-      constraints: BoxConstraints(
-        minHeight: durationHours * 50.0 > 100 ? durationHours * 50.0 : 100,
-      ),
-      padding: const EdgeInsets.all(AppConstants.spacingM),
-      decoration: BoxDecoration(
-        gradient: AppConstants.dashboardAppBarGradient,
-        borderRadius: BorderRadius.circular(AppConstants.radiusL),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            event.summary,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          if (event.location != null && event.location!.isNotEmpty) ...[
-            const SizedBox(height: AppConstants.spacingS),
-            Text(
-              event.location!,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.white70,
-              ),
-            ),
-          ] else if (event.description != null && event.description!.isNotEmpty) ...[
-            const SizedBox(height: AppConstants.spacingS),
-            Text(
-              event.description!,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.white70,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ],
       ),
     );
   }

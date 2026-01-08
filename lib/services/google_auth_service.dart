@@ -16,9 +16,11 @@ class GoogleAuthService {
     scopes: [
       'email',
       'profile',
-      'https://www.googleapis.com/auth/calendar.readonly', // Để đọc Google Calendar
+      'https://www.googleapis.com/auth/calendar', // Full access to create/edit events
+      'https://www.googleapis.com/auth/calendar.events', // Explicit events scope
     ],
     serverClientId: _serverClientId, // For backend token verification
+    forceCodeForRefreshToken: true, // Force getting refresh token
   );
 
   /// Get base URL based on platform
