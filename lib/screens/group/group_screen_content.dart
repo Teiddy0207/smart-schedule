@@ -42,26 +42,26 @@ class GroupScreenContentState extends State<GroupScreenContent> {
   }
 
   void _filterGroups(String query) {
-    print('🔍 _filterGroups called with query: "$query"');
-    print('  - Current _groups.length: ${_groups.length}');
-    print('  - Current _isSearching: $_isSearching');
+    print('filterGroups called with query: "$query"');
+    print('Current _groups.length: ${_groups.length}');
+    print('Current _isSearching: $_isSearching');
     
     setState(() {
       if (query.trim().isEmpty) {
         _filteredGroups = List.from(_groups); // Copy list để tránh reference issues
         _isSearching = false;
-        print('  ✅ Query empty, showing all ${_filteredGroups.length} groups');
+        print('Query empty, showing all ${_filteredGroups.length} groups');
       } else {
         _isSearching = true;
         final lowerQuery = query.toLowerCase().trim();
         _filteredGroups = _groups.where((group) {
           final matches = group.name.toLowerCase().contains(lowerQuery);
           if (matches) {
-            print('    ✅ Group "${group.name}" matches query');
+            print('Group "${group.name}" matches query');
           }
           return matches;
         }).toList();
-        print('  ✅ Query not empty, filtered to ${_filteredGroups.length} groups');
+        print('Query not empty, filtered to ${_filteredGroups.length} groups');
       }
     });
   }
@@ -101,7 +101,7 @@ class GroupScreenContentState extends State<GroupScreenContent> {
         authProvider: authProvider,
       );
 
-      print('✅ Total groups from API: ${allGroups.length}');
+      print('Total groups from API: ${allGroups.length}');
       for (final group in allGroups) {
         print('  - Group: ${group.name} (ID: ${group.id})');
       }
@@ -110,7 +110,7 @@ class GroupScreenContentState extends State<GroupScreenContent> {
       // Chỉ cần lấy số lượng thành viên cho mỗi nhóm
       final memberCounts = <String, int>{};
       
-      print('📊 Getting member counts for ${allGroups.length} groups (backend already filtered by user)...');
+      print('Getting member counts for ${allGroups.length} groups (backend already filtered by user)...');
       
       for (final group in allGroups) {
         try {
@@ -123,7 +123,7 @@ class GroupScreenContentState extends State<GroupScreenContent> {
           final userCount = usersResponse.users.length;
           memberCounts[group.id] = userCount > 0 ? userCount : 1; // Ít nhất 1 (người tạo)
           
-          print('  ✅ Group "${group.name}" (ID: ${group.id}): $userCount users');
+          print('Group "${group.name}" (ID: ${group.id}): $userCount users');
         } catch (e) {
           print('  ⚠ Không thể lấy danh sách users cho nhóm ${group.id}: $e');
           // Nếu không lấy được, giả định ít nhất có 1 thành viên (người tạo)
@@ -146,7 +146,7 @@ class GroupScreenContentState extends State<GroupScreenContent> {
         });
         // Áp dụng filter search nếu có
         _filterGroups(_searchController.text);
-        print('✅✅✅ State updated successfully! ✅✅✅');
+        print('State updated successfully!');
         print('  - _groups.length: ${_groups.length}');
         print('  - _memberCounts.length: ${_memberCounts.length}');
         print('  - _isSearching: $_isSearching');
@@ -154,7 +154,7 @@ class GroupScreenContentState extends State<GroupScreenContent> {
         print('  - Search query: "${_searchController.text}"');
         print('  - Will display: ${_isSearching ? _filteredGroups.length : _groups.length} groups');
       } else {
-        print('❌ Widget not mounted, cannot update state');
+        print('Widget not mounted, cannot update state');
       }
     } catch (e) {
       print('Error loading groups: $e');

@@ -52,7 +52,7 @@ class GoogleAuthService {
       }
 
       // Get user info from Google account
-      final googleEmail = account.email ?? '';
+      final googleEmail = account.email;
       final googleDisplayName = account.displayName ?? '';
       final googlePhotoUrl = account.photoUrl;
       
@@ -72,7 +72,7 @@ class GoogleAuthService {
       }
 
       AppLogger.info('=== Google Sign-In Debug ===', tag: 'GoogleAuth');
-      AppLogger.info('idToken: ${idToken != null ? "Có" : "Không"}', tag: 'GoogleAuth');
+      AppLogger.info('idToken: ${"Có"}', tag: 'GoogleAuth');
       AppLogger.info('accessToken: ${accessToken != null ? "Có" : "Không"}', tag: 'GoogleAuth');
       AppLogger.info('serverAuthCode: ${serverAuthCode != null ? "Có" : "Không"}', tag: 'GoogleAuth');
 
@@ -119,7 +119,7 @@ class GoogleAuthService {
       } on http.ClientException catch (e) {
         throw Exception('Lỗi kết nối: ${e.message}\n'
             'Backend có thể đã đóng kết nối. Vui lòng kiểm tra log backend.');
-      } on TimeoutException catch (e) {
+      } on TimeoutException {
         throw Exception('Request timeout. Backend không phản hồi.');
       }
 

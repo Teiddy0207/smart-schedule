@@ -69,7 +69,6 @@ class _SuggestedSlotsScreenState extends State<SuggestedSlotsScreen> {
   SuggestedSlot? _selectedSlot;
   String? _warning;
   int _connectedCount = 0;
-  int _disconnectedCount = 0;
   int _totalParticipants = 0;
   DateTime _selectedDate = DateTime.now();
   bool _workingHoursOnly = true;
@@ -139,7 +138,6 @@ class _SuggestedSlotsScreenState extends State<SuggestedSlotsScreen> {
         _slots = loadedSlots;
         _warning = response['warning'] as String?;
         _connectedCount = response['connected_count'] as int? ?? 0;
-        _disconnectedCount = response['disconnected_count'] as int? ?? 0;
         _totalParticipants = response['total_participants'] as int? ?? 0;
         _isLoading = false;
       });
@@ -228,7 +226,7 @@ class _SuggestedSlotsScreenState extends State<SuggestedSlotsScreen> {
 
       // ApiService returns data directly when success (no 'success' wrapper)
       // Check if event_id exists to confirm success
-      if (result != null && (result['event_id'] != null || result['data'] != null)) {
+      if ((result['event_id'] != null || result['data'] != null)) {
         // Pop all screens back to MainScreen (dashboard) first
         if (mounted) {
           Navigator.of(context).popUntil((route) => route.isFirst);

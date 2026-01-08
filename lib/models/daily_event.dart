@@ -113,9 +113,13 @@ class DailyEvent {
     String endTimeStr;
     
     if (startData?['dateTime'] != null) {
-      // Timed event
-      startDateTime = DateTime.parse(startData!['dateTime'] as String);
-      endDateTime = DateTime.parse(endData?['dateTime'] as String? ?? startData['dateTime'] as String);
+      // Timed event - convert to local timezone
+      final parsedStart = DateTime.parse(startData!['dateTime'] as String);
+      final parsedEnd = DateTime.parse(endData?['dateTime'] as String? ?? startData['dateTime'] as String);
+      
+      startDateTime = parsedStart.toLocal();
+      endDateTime = parsedEnd.toLocal();
+      
       startTimeStr = '${startDateTime.hour.toString().padLeft(2, '0')}:${startDateTime.minute.toString().padLeft(2, '0')}';
       endTimeStr = '${endDateTime.hour.toString().padLeft(2, '0')}:${endDateTime.minute.toString().padLeft(2, '0')}';
     } else {
@@ -142,9 +146,13 @@ class DailyEvent {
     final isOnline = meetLink != null && meetLink.isNotEmpty;
     final location = json['location'] as String? ?? (isOnline ? 'Online Meeting' : '');
 
+    // Debug: log parsed event data
+    final parsedTitle = json['summary'] as String? ?? 'Untitled Event';
+    debugPrint('DailyEvent.fromGoogleCalendar: id=${json['id']}, summary=$parsedTitle');
+
     return DailyEvent(
       id: json['id'] as String? ?? '',
-      title: json['summary'] as String? ?? 'Untitled Event',
+      title: parsedTitle,
       subtitle: json['description'] as String? ?? '',
       date: startDateTime,
       startTime: startTimeStr,

@@ -104,13 +104,6 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
           print('⚠ User ${groupUser.user.id} missing info, will show fallback');
         }
       }
-      
-      // Cập nhật response với users đã được xử lý
-      final updatedResponse = GetUsersByGroupIdResponse(
-        groupId: response.groupId,
-        group: response.group,
-        users: updatedUsers,
-      );
 
       // Nếu response không có thông tin group đầy đủ (name rỗng), cập nhật từ widget
       if (response.group.name.isEmpty && widget.groupName.isNotEmpty) {
@@ -512,10 +505,10 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                           final isMe = _isCurrentUser(groupUser.userId);
                           
                           // Debug: Log thông tin user
-                          print('🎨 Building user card for:');
-                          print('  User ID: ${groupUser.user.id}');
-                          print('  providerName: "${groupUser.user.providerName}" (isEmpty: ${groupUser.user.providerName.isEmpty})');
-                          print('  providerEmail: "${groupUser.user.providerEmail}" (isEmpty: ${groupUser.user.providerEmail.isEmpty})');
+                          print('Building user card for:');
+                          print('User ID: ${groupUser.user.id}');
+                          print('providerName: "${groupUser.user.providerName}" (isEmpty: ${groupUser.user.providerName.isEmpty})');
+                          print('providerEmail: "${groupUser.user.providerEmail}" (isEmpty: ${groupUser.user.providerEmail.isEmpty})');
                           
                           // Lấy name và email
                           String name = groupUser.user.providerName.trim();
@@ -525,14 +518,14 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                           if ((name.isEmpty || email.isEmpty) && widget.userInfoMap != null) {
                             if (widget.userInfoMap!.containsKey(groupUser.user.id)) {
                               final userInfo = widget.userInfoMap![groupUser.user.id]!;
-                              print('  ✅ Found in userInfoMap: ${userInfo}');
+                              print('Found in userInfoMap: ${userInfo}');
                               if (name.isEmpty && userInfo['name'] != null && userInfo['name']!.isNotEmpty) {
                                 name = userInfo['name']!;
-                                print('  ✅ Updated name from userInfoMap: $name');
+                                print('Updated name from userInfoMap: $name');
                               }
                               if (email.isEmpty && userInfo['email'] != null && userInfo['email']!.isNotEmpty) {
                                 email = userInfo['email']!;
-                                print('  ✅ Updated email from userInfoMap: $email');
+                                print('Updated email from userInfoMap: $email');
                               }
                             }
                           }
@@ -540,7 +533,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                           // Nếu vẫn không có thông tin, thử từ cache
                           if ((name.isEmpty || email.isEmpty) && _userInfoCache.containsKey(groupUser.user.id)) {
                             final cachedInfo = _userInfoCache[groupUser.user.id]!;
-                            print('  ✅ Found in cache: ${cachedInfo.displayName}, ${cachedInfo.email}');
+                            print('Found in cache: ${cachedInfo.displayName}, ${cachedInfo.email}');
                             if (name.isEmpty) {
                               name = cachedInfo.displayName ?? cachedInfo.email;
                             }
@@ -552,7 +545,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                           // Nếu vẫn rỗng, dùng fallback
                           if (name.isEmpty) {
                             name = 'Người dùng';
-                            print('  ⚠ Using fallback name: $name');
+                            print('Using fallback name: $name');
                           }
                           if (email.isEmpty) {
                             // Thử dùng user ID làm identifier
@@ -561,10 +554,10 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                             } else {
                               email = 'ID: ${groupUser.user.id}';
                             }
-                            print('  ⚠ Using fallback email: $email');
+                            print('Using fallback email: $email');
                           }
                           
-                          print('  📝 Final display: name="$name", email="$email"');
+                          print('Final display: name="$name", email="$email"');
                           
                           return _buildUserCard(
                             name: name,

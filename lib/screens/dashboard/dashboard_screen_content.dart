@@ -17,12 +17,6 @@ class _DashboardScreenContentState extends State<DashboardScreenContent> {
   DashboardView _currentView = DashboardView.daily;
   DateTime _selectedDate = DateTime.now();
 
-  void _showDailyView() {
-    setState(() {
-      _currentView = DashboardView.daily;
-    });
-  }
-
   void _showMonthlyView() {
     setState(() {
       _currentView = DashboardView.monthly;

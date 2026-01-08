@@ -16,24 +16,16 @@ class UserSearchResult {
   });
 
   factory UserSearchResult.fromJson(Map<String, dynamic> json) {
-    // Backend có thể trả về users.id hoặc social_logins.id
-    // Ưu tiên social_login_id nếu có, nếu không thì dùng id
-    final socialLoginId = json['social_login_id']?.toString() ?? 
-                          json['social_login']?['id']?.toString();
-    final userId = json['id']?.toString() ?? '';
+    // Backend returns:
+    // - id: social_logins.id (not needed for calendar lookup)
+    // - user_id: users.id (needed for calendar connection lookup)
+    // We must use user_id because GetConnectionsByUserIDs queries by user_id
+    final userId = json['user_id']?.toString() ?? json['id']?.toString() ?? '';
     
-    // Sử dụng social_login_id nếu có, nếu không thì dùng id
-    final finalId = socialLoginId?.isNotEmpty == true ? socialLoginId! : userId;
-    
-    // Log để debug
-    if (socialLoginId != null && socialLoginId.isNotEmpty) {
-      AppLogger.info('UserSearchResult: Using social_login_id=$socialLoginId (original id=$userId)', tag: 'UserSearchResult');
-    } else {
-      AppLogger.info('UserSearchResult: Using id=$userId (no social_login_id found)', tag: 'UserSearchResult');
-    }
+    AppLogger.info('UserSearchResult: Using user_id=$userId', tag: 'UserSearchResult');
     
     return UserSearchResult(
-      id: finalId,
+      id: userId,
       email: json['email'] ?? json['provider_email'] ?? '',
       displayName: json['display_name'] ?? json['provider_username'] ?? json['username'],
       avatarUrl: json['avatar_url'] ?? json['photo_url'],

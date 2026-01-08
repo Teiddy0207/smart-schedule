@@ -29,7 +29,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
 
   // Primary color - đồng bộ với app
   static const _primaryColor = Color(0xFF6C63FF);
-  static const _primaryDark = Color(0xFF5B54E8);
 
   String _selectedDuration = '30 phút';
   String _selectedPriority = 'Không ưu tiên';
@@ -48,11 +47,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     'Chiều',
     'Tối',
   ];
-
-  final Map<String, bool> _timeOptions = {
-    'Giờ hành chính': false,
-    'Cuối tuần': false,
-  };
 
   @override
   void dispose() {
@@ -491,56 +485,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(Icons.access_time, color: _primaryColor, size: 22),
-              SizedBox(width: 8),
-              Text(
-                'Ràng buộc thời gian',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Lexend',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: _timeOptions.entries.map((entry) {
-              final isSelected = entry.value;
-              return FilterChip(
-                label: Text(
-                  entry.key,
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.black87,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                selected: isSelected,
-                onSelected: (value) {
-                  setState(() {
-                    _timeOptions[entry.key] = value;
-                  });
-                },
-                backgroundColor: const Color(0xFFF5F6F8),
-                selectedColor: _primaryColor,
-                checkmarkColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
     );
   }
 
@@ -646,7 +590,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
         ),
       ),
     );
-
     // Handle returned slot
     if (selectedSlot != null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

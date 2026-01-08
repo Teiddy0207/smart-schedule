@@ -6,9 +6,9 @@ class NotificationService {
   /// Get pending invitations for current user
   static Future<List<InvitationData>> getPendingInvitations() async {
     try {
-      debugPrint('🔔 Calling ApiService.get(/api/v1/private/invitations)');
+      debugPrint('Calling ApiService.get(/api/v1/private/invitations)');
       final response = await ApiService.get('/api/v1/private/invitations');
-      debugPrint('🔔 ApiService response: $response');
+      debugPrint('ApiService response: $response');
 
       List<dynamic> invitations = [];
       
@@ -47,13 +47,13 @@ class NotificationService {
 
   /// Accept an invitation
   static Future<void> acceptInvitation(String invitationId) async {
-    debugPrint('🔔 Accepting invitation: $invitationId');
+    debugPrint('Accepting invitation: $invitationId');
     await ApiService.post('/api/v1/private/invitations/$invitationId/accept');
   }
 
   /// Decline an invitation
   static Future<void> declineInvitation(String invitationId) async {
-    debugPrint('🔔 Declining invitation: $invitationId');
+    debugPrint('Declining invitation: $invitationId');
     await ApiService.post('/api/v1/private/invitations/$invitationId/decline');
   }
 }

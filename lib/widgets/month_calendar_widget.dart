@@ -21,7 +21,6 @@ class MonthCalendarWidget extends StatefulWidget {
 
 class _MonthCalendarWidgetState extends State<MonthCalendarWidget> {
   late DateTime _currentMonth;
-  late DateTime _selectedDate;
 
   // Tên các ngày trong tuần (tiếng Việt)
   final List<String> _weekDays = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
@@ -31,7 +30,6 @@ class _MonthCalendarWidgetState extends State<MonthCalendarWidget> {
     super.initState();
     final initialDate = widget.selectedDate ?? DateTime.now();
     _currentMonth = initialDate;
-    _selectedDate = initialDate;
   }
 
 
@@ -75,18 +73,10 @@ class _MonthCalendarWidgetState extends State<MonthCalendarWidget> {
     });
   }
 
-  // Chuyển tháng sau
-  void _nextMonth() {
-    setState(() {
-      _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1);
-    });
-  }
-
   // Refresh về tháng hiện tại
   void _refreshToToday() {
     setState(() {
       _currentMonth = DateTime.now();
-      _selectedDate = DateTime.now();
     });
   }
 
@@ -220,7 +210,6 @@ class _MonthCalendarWidgetState extends State<MonthCalendarWidget> {
                       return InkWell(
                         onTap: () {
                           setState(() {
-                            _selectedDate = date;
                           });
                           widget.onDateSelected?.call(date);
                         },

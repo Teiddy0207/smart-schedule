@@ -204,8 +204,6 @@ class _DailyScheduleWidgetState extends State<DailyScheduleWidget> {
   }
 
   Widget _buildTimelineEvent(DailyEvent event) {
-    final height = event.durationHours * 60.0; // 60px per hour
-
     return Dismissible(
       key: Key(event.id),
       direction: DismissDirection.endToStart,
@@ -269,11 +267,13 @@ class _DailyScheduleWidgetState extends State<DailyScheduleWidget> {
           // Event card
           Expanded(
             child: Container(
-              height: event.durationHours <= 0.5 
-                  ? 60.0  // 30 min or less
-                  : event.durationHours <= 1.0 
-                      ? 90.0  // 1 hour
-                      : (event.durationHours * 80.0).clamp(90.0, 250.0), // > 1 hour
+              constraints: BoxConstraints(
+                minHeight: event.durationHours <= 0.5 
+                    ? 60.0  // 30 min or less
+                    : event.durationHours <= 1.0 
+                        ? 90.0  // 1 hour
+                        : (event.durationHours * 80.0).clamp(90.0, 250.0),
+              ),
               padding: const EdgeInsets.all(AppConstants.spacingM),
               decoration: BoxDecoration(
                 gradient: AppConstants.dashboardAppBarGradient,
@@ -281,20 +281,20 @@ class _DailyScheduleWidgetState extends State<DailyScheduleWidget> {
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Flexible(
-                    child: Text(
-                      event.title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                  Text(
+                    event.title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      fontFamily: 'Lexend',
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  if (event.durationHours >= 1.0) ...[
+                  if (event.durationHours >= 1.0 && event.subtitle.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Text(
                       event.subtitle,
@@ -306,11 +306,11 @@ class _DailyScheduleWidgetState extends State<DailyScheduleWidget> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
-                  if (event.durationHours >= 1.0 && event.participants.isNotEmpty) ...[
-                    const Spacer(),
+                  if (event.participants.isNotEmpty) ...[
+                    const SizedBox(height: 8),
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        const Spacer(),
                         ...event.participants.take(3).map((p) {
                           return Padding(
                             padding: const EdgeInsets.only(left: 4),

@@ -19,12 +19,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
   @override
   void initState() {
     super.initState();
-    debugPrint('🔔 NotificationScreen INIT');
+    debugPrint('NotificationScreen INIT');
     _loadInvitations();
   }
 
   Future<void> _loadInvitations() async {
-    debugPrint('🔔 Loading invitations...');
+    debugPrint('Loading invitations...');
     setState(() {
       _isLoading = true;
       _error = null;
@@ -32,13 +32,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
     try {
       final invitations = await NotificationService.getPendingInvitations();
-      debugPrint('🔔 Got invitations: ${invitations.length}');
+      debugPrint('Got invitations: ${invitations.length}');
       setState(() {
         _invitations = invitations;
         _isLoading = false;
       });
     } catch (e) {
-      debugPrint('🔔 Error loading invitations: $e');
+      debugPrint('Error loading invitations: $e');
       setState(() {
         _error = e.toString();
         _isLoading = false;
