@@ -16,8 +16,24 @@ class UserSearchResult {
   });
 
   factory UserSearchResult.fromJson(Map<String, dynamic> json) {
+    // Backend có thể trả về users.id hoặc social_logins.id
+    // Ưu tiên social_login_id nếu có, nếu không thì dùng id
+    final socialLoginId = json['social_login_id']?.toString() ?? 
+                          json['social_login']?['id']?.toString();
+    final userId = json['id']?.toString() ?? '';
+    
+    // Sử dụng social_login_id nếu có, nếu không thì dùng id
+    final finalId = socialLoginId?.isNotEmpty == true ? socialLoginId! : userId;
+    
+    // Log để debug
+    if (socialLoginId != null && socialLoginId.isNotEmpty) {
+      AppLogger.info('UserSearchResult: Using social_login_id=$socialLoginId (original id=$userId)', tag: 'UserSearchResult');
+    } else {
+      AppLogger.info('UserSearchResult: Using id=$userId (no social_login_id found)', tag: 'UserSearchResult');
+    }
+    
     return UserSearchResult(
-      id: json['id']?.toString() ?? '',
+      id: finalId,
       email: json['email'] ?? json['provider_email'] ?? '',
       displayName: json['display_name'] ?? json['provider_username'] ?? json['username'],
       avatarUrl: json['avatar_url'] ?? json['photo_url'],
@@ -58,9 +74,27 @@ class UserSearchService {
 
       if (response['status'] == 200 && response['data'] != null) {
         final List<dynamic> usersData = response['data'] as List<dynamic>? ?? [];
-        return usersData
+        
+        // Log để debug cấu trúc response
+        AppLogger.info('UserSearchService: Found ${usersData.length} users', tag: _tag);
+        if (usersData.isNotEmpty) {
+          final firstUser = usersData.first as Map<String, dynamic>;
+          AppLogger.info('UserSearchService: First user keys: ${firstUser.keys.toList()}', tag: _tag);
+          AppLogger.info('UserSearchService: First user FULL data: $firstUser', tag: _tag);
+          // Log các field quan trọng
+          AppLogger.info('UserSearchService: id=${firstUser['id']}, social_login_id=${firstUser['social_login_id']}, social_login=${firstUser['social_login']}', tag: _tag);
+        }
+        
+        final results = usersData
             .map((u) => UserSearchResult.fromJson(u as Map<String, dynamic>))
             .toList();
+        
+        // Log kết quả sau khi parse
+        if (results.isNotEmpty) {
+          AppLogger.info('UserSearchService: Parsed first result ID: ${results.first.id}', tag: _tag);
+        }
+        
+        return results;
       }
       
       return [];

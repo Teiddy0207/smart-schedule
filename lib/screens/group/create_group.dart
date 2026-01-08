@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../services/group_service.dart';
+import 'group_detail_screen.dart';
+import 'add_user_to_group.dart';
 
 class CreateGroup extends StatefulWidget {
   const CreateGroup({super.key});
@@ -10,22 +15,11 @@ class CreateGroup extends StatefulWidget {
 class _CreateGroupState extends State<CreateGroup> {
   final TextEditingController _groupNameController = TextEditingController();
   final TextEditingController _groupDescriptionController = TextEditingController();
+  bool _isLoading = false;
+  String? _errorMessage;
   
-  // fake data
-  List<Map<String, String>> _members = [
-    {
-      'name': 'Akbander',
-      'email': 'mrquang176@gmail.com',
-    },
-    {
-      'name': 'Quang SDS',
-      'email': 'mrquang176@gmail.com',
-    },
-    {
-      'name': 'Quang SDS',
-      'email': 'mrquang176@gmail.com',
-    },
-  ];
+  // Danh sách thành viên (sẽ được thêm sau khi có API thêm thành viên)
+  List<Map<String, String>> _members = [];
 
   @override
   void dispose() {
@@ -40,22 +34,165 @@ class _CreateGroupState extends State<CreateGroup> {
     });
   }
 
-  void _addMember() {
-    // TODO: Implement thêm thành viên
-    // Có thể mở dialog hoặc màn hình tìm kiếm thành viên
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Thêm Thành viên'),
-        content: const Text('Tính năng thêm thành viên sẽ được triển khai sau.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Đóng'),
-          ),
-        ],
+  Future<void> _addMember() async {
+    // Mở màn hình tìm kiếm và thêm thành viên
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddUserToGroup(
+          existingMembers: _members,
+        ),
       ),
     );
+
+    // Nếu có kết quả (user đã chọn), thêm vào danh sách
+    if (result != null && result is Map<String, String>) {
+      setState(() {
+        // Kiểm tra xem user đã có trong danh sách chưa
+        final email = result['email']?.toLowerCase();
+        final isDuplicate = _members.any(
+          (member) => member['email']?.toLowerCase() == email,
+        );
+        
+        if (!isDuplicate) {
+          _members.add({
+            'id': result['id'] ?? '',
+            'name': result['name'] ?? '',
+            'email': result['email'] ?? '',
+          });
+        }
+      });
+    }
+  }
+
+  Future<void> _createGroup() async {
+    // Validate input
+    if (_groupNameController.text.trim().isEmpty) {
+      setState(() {
+        _errorMessage = 'Vui lòng nhập tên nhóm';
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      
+      final response = await GroupService.createGroup(
+        authProvider: authProvider,
+        name: _groupNameController.text.trim(),
+        description: _groupDescriptionController.text.trim(),
+      );
+
+      if (mounted) {
+        // Kiểm tra xem có ID nhóm không
+        if (response.group.id.isNotEmpty) {
+          // Thêm các thành viên vào nhóm sau khi tạo nhóm thành công
+          if (_members.isNotEmpty) {
+            print('Adding ${_members.length} members to group ${response.group.id}...');
+            
+            // Lấy danh sách user IDs từ _members
+            final userIds = _members
+                .map((member) => member['id'])
+                .where((id) => id != null && id.isNotEmpty)
+                .cast<String>()
+                .toList();
+            
+            if (userIds.isNotEmpty) {
+              try {
+                // Gọi API một lần để thêm tất cả users
+                await GroupService.addUsersToGroup(
+                  authProvider: authProvider,
+                  groupId: response.group.id,
+                  userIds: userIds,
+                );
+                
+                print('✅ Added ${userIds.length} members to group successfully');
+                
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Tạo nhóm thành công! Đã thêm ${userIds.length} thành viên.'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } catch (e) {
+                print('⚠ Failed to add members: $e');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Tạo nhóm thành công nhưng không thể thêm thành viên: ${e.toString().replaceFirst('Exception: ', '')}'),
+                    backgroundColor: Colors.orange,
+                    duration: const Duration(seconds: 4),
+                  ),
+                );
+              }
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Tạo nhóm thành công!'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Tạo nhóm thành công!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+          
+          // Tạo map user_id -> {name, email} để truyền sang GroupDetailScreen
+          final Map<String, Map<String, String>> userInfoMap = {};
+          for (final member in _members) {
+            final userId = member['id'];
+            if (userId != null && userId.isNotEmpty) {
+              userInfoMap[userId] = {
+                'name': member['name'] ?? '',
+                'email': member['email'] ?? '',
+              };
+            }
+          }
+          
+          // Có ID, điều hướng đến màn hình nhóm mới vừa tạo
+          // Sử dụng push thay vì pushReplacement để có thể quay lại và refresh
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => GroupDetailScreen(
+                groupName: response.group.name,
+                groupId: response.group.id,
+                userInfoMap: userInfoMap.isNotEmpty ? userInfoMap : null,
+              ),
+            ),
+          ).then((_) {
+            // Khi quay lại từ màn hình chi tiết, pop về màn hình trước với result để trigger refresh
+            Navigator.pop(context, true); // true = đã tạo nhóm thành công, trigger refresh
+          });
+        } else {
+          // Không có ID (backend không trả về), pop về màn hình trước với result để trigger refresh
+          Navigator.pop(context, true); // true = đã tạo nhóm thành công
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Tạo nhóm thành công!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString().replaceFirst('Exception: ', '');
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -169,7 +306,7 @@ class _CreateGroupState extends State<CreateGroup> {
                   icon: const Icon(Icons.add, size: 20),
                   label: const Text('Thêm Thành viên'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF90CAF9), // Màu xanh nhạt
+                    backgroundColor: const Color(0xFF2196F3), // Màu xanh dương giống nút Tạo Nhóm
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -178,7 +315,7 @@ class _CreateGroupState extends State<CreateGroup> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    elevation: 0,
+                    elevation: 2,
                   ),
                 ),
               ],
@@ -212,28 +349,35 @@ class _CreateGroupState extends State<CreateGroup> {
             
             const SizedBox(height: 24),
             
+            // Hiển thị lỗi nếu có
+            if (_errorMessage != null)
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red[300]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.error_outline, color: Colors.red[700], size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _errorMessage!,
+                        style: TextStyle(color: Colors.red[700], fontSize: 14),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            
             // Nút Tạo Nhóm
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  // TODO: Implement logic tạo nhóm
-                  if (_groupNameController.text.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Vui lòng nhập tên nhóm'),
-                      ),
-                    );
-                    return;
-                  }
-                  // Xử lý tạo nhóm ở đây
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Tạo nhóm thành công!'),
-                    ),
-                  );
-                },
+                onPressed: _isLoading ? null : _createGroup,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2196F3),
                   foregroundColor: Colors.white,
@@ -242,14 +386,24 @@ class _CreateGroupState extends State<CreateGroup> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   elevation: 2,
+                  disabledBackgroundColor: Colors.grey[300],
                 ),
-                child: const Text(
-                  'Tạo Nhóm',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Text(
+                        'Tạo Nhóm',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
             ),
           ],
