@@ -1,17 +1,18 @@
 class LoginRequest {
-  final String username;
+  final String identifiers; // phone, username, or email
   final String password;
 
   LoginRequest({
-    required this.username,
+    required this.identifiers,
     required this.password,
   });
 
   Map<String, dynamic> toJson() {
     return {
-      'username': username,
+      'identifiers': identifiers,
       'password': password,
     };
   }
 }
+
 
