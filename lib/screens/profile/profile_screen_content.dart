@@ -17,11 +17,16 @@ class _ProfileScreenContentState extends State<ProfileScreenContent> {
   String? _bookingUrl;
   bool _isLoading = true;
   String? _errorMessage;
+  
+  int? _totalEvents;
+  double? _totalDurationHours;
+  bool _isLoadingStats = true;
 
   @override
   void initState() {
     super.initState();
     _loadPersonalUrl();
+    _loadWeekStatistics();
   }
 
   Future<void> _loadPersonalUrl() async {
@@ -48,6 +53,33 @@ class _ProfileScreenContentState extends State<ProfileScreenContent> {
       setState(() {
         _errorMessage = 'Lỗi khi tải URL đặt lịch: ${e.toString()}';
         _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadWeekStatistics() async {
+    try {
+      setState(() {
+        _isLoadingStats = true;
+      });
+
+      final response = await BookingService.getWeekStatistics();
+      
+      if (response['status'] == 200 && response['data'] != null) {
+        final data = response['data'] as Map<String, dynamic>;
+        setState(() {
+          _totalEvents = data['total_events'] as int?;
+          _totalDurationHours = (data['total_duration_hours'] as num?)?.toDouble();
+          _isLoadingStats = false;
+        });
+      } else {
+        setState(() {
+          _isLoadingStats = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isLoadingStats = false;
       });
     }
   }
@@ -95,7 +127,9 @@ class _ProfileScreenContentState extends State<ProfileScreenContent> {
                             child: _buildStatCard(
                               color: const Color(0xFF2196F3),
                               icon: Icons.event_available,
-                              number: '18',
+                              number: _isLoadingStats 
+                                  ? '...' 
+                                  : (_totalEvents?.toString() ?? '0'),
                               label: 'Sự kiện tuần này',
                             ),
                           ),
@@ -104,7 +138,9 @@ class _ProfileScreenContentState extends State<ProfileScreenContent> {
                             child: _buildStatCard(
                               color: const Color(0xFF4CAF50),
                               icon: Icons.access_time,
-                              number: '27h',
+                              number: _isLoadingStats 
+                                  ? '...' 
+                                  : '${_totalDurationHours?.toStringAsFixed(1) ?? '0.0'}h',
                               label: 'Tổng thời gian',
                             ),
                           ),

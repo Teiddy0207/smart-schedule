@@ -13,5 +13,12 @@ class BookingService {
     AppLogger.info('Getting personal booking URL', tag: _tag);
     return await ApiService.get('$_basePath/personal-url');
   }
+
+  /// Get week statistics
+  /// GET /api/v1/private/booking/week-statistics
+  static Future<Map<String, dynamic>> getWeekStatistics() async {
+    AppLogger.info('Getting week statistics', tag: _tag);
+    return await ApiService.get('$_basePath/week-statistics');
+  }
 }
 
