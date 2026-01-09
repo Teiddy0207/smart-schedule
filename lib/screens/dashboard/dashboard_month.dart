@@ -56,21 +56,6 @@ class MainDashboardMonth extends StatelessWidget {
                     },
                   ),
                   const Spacer(),
-                  CircleAvatar(
-                    backgroundColor: Colors.white24,
-                    child: IconButton(
-                      icon: const Icon(Icons.search, color: Colors.white),
-                      onPressed: () {},
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  CircleAvatar(
-                    backgroundColor: Colors.white24,
-                    child: IconButton(
-                      icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-                      onPressed: () {},
-                    ),
-                  ),
                 ],
               ),
             ),
