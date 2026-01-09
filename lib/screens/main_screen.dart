@@ -22,12 +22,11 @@ class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
   int _notificationCount = 0;
 
-  // Danh sách các body tương ứng - THỨ TỰ GIỐNG BOTTOM NAV
   late final List<Widget> _screens = const [
-    DashboardScreenContent(),   // Trang chủ
-    CalendarScreenContent(),    // Lịch
-    GroupScreenContent(),       // Nhóm
-    ProfileScreenContent(),     // Cá nhân
+    DashboardScreenContent(),
+    CalendarScreenContent(),
+    GroupScreenContent(),
+    ProfileScreenContent(),
   ];
 
   @override
@@ -62,7 +61,7 @@ class _MainScreenState extends State<MainScreen> {
     final username = authProvider.currentUser?.username ?? 'Người dùng';
 
     switch (_currentIndex) {
-      case 0: // Trang chủ
+      case 0:
         return PreferredSize(
           preferredSize: const Size.fromHeight(110),
           child: Container(
@@ -102,69 +101,14 @@ class _MainScreenState extends State<MainScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    CircleAvatar(
-                      backgroundColor: Colors.white24,
-                      child: IconButton(
-                        icon: const Icon(Icons.search, color: Colors.white),
-                        onPressed: () {},
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Stack(
-                      children: [
-                        CircleAvatar(
-                          backgroundColor: Colors.white24,
-                          child: IconButton(
-                            icon: const Icon(
-                              Icons.notifications_outlined,
-                              color: Colors.white,
-                            ),
-                            onPressed: () async {
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const NotificationScreen(),
-                                ),
-                              );
-                              _loadNotificationCount();
-                            },
-                          ),
-                        ),
-                        if (_notificationCount > 0)
-                          Positioned(
-                            right: 0,
-                            top: 0,
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: const BoxDecoration(
-                                color: Colors.red,
-                                shape: BoxShape.circle,
-                              ),
-                              constraints: const BoxConstraints(
-                                minWidth: 18,
-                                minHeight: 18,
-                              ),
-                              child: Text(
-                                _notificationCount > 99 ? '99+' : '$_notificationCount',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
                   ],
                 ),
               ),
             ),
           ),
         );
-      case 1: // Lịch
+
+      case 1:
         return PreferredSize(
           preferredSize: const Size.fromHeight(110),
           child: Container(
@@ -202,20 +146,14 @@ class _MainScreenState extends State<MainScreen> {
                       style: AppConstants.headingMedium,
                     ),
                     const Spacer(),
-                    CircleAvatar(
-                      backgroundColor: Colors.white24,
-                      child: IconButton(
-                        icon: const Icon(Icons.today, color: Colors.white),
-                        onPressed: () {},
-                      ),
-                    ),
                   ],
                 ),
               ),
             ),
           ),
         );
-      case 2: // Nhóm
+
+      case 2:
         return PreferredSize(
           preferredSize: const Size.fromHeight(110),
           child: Builder(
@@ -283,8 +221,8 @@ class _MainScreenState extends State<MainScreen> {
             ),
           ),
         );
-      case 3: // Cá nhân
-        return null;
+
+      case 3:
       default:
         return null;
     }
@@ -311,32 +249,11 @@ class _MainScreenState extends State<MainScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              // Trang chủ
-              _buildNavItem(
-                icon: Icons.home,
-                label: 'Trang chủ',
-                index: 0,
-              ),
-              // Lịch
-              _buildNavItem(
-                icon: Icons.calendar_today,
-                label: 'Lịch',
-                index: 1,
-              ),
-              // Khoảng trống cho FAB
+              _buildNavItem(icon: Icons.home, label: 'Trang chủ', index: 0),
+              _buildNavItem(icon: Icons.calendar_today, label: 'Lịch', index: 1),
               const SizedBox(width: 56),
-              // Nhóm
-              _buildNavItem(
-                icon: Icons.group,
-                label: 'Nhóm',
-                index: 2,
-              ),
-              // Cá nhân
-              _buildNavItem(
-                icon: Icons.person,
-                label: 'Cá nhân',
-                index: 3,
-              ),
+              _buildNavItem(icon: Icons.group, label: 'Nhóm', index: 2),
+              _buildNavItem(icon: Icons.person, label: 'Cá nhân', index: 3),
             ],
           ),
         ),
@@ -355,9 +272,7 @@ class _MainScreenState extends State<MainScreen> {
     return InkWell(
       onTap: () {
         if (_currentIndex != index) {
-          setState(() {
-            _currentIndex = index;
-          });
+          setState(() => _currentIndex = index);
         }
       },
       borderRadius: BorderRadius.circular(AppConstants.radiusM),
@@ -369,11 +284,7 @@ class _MainScreenState extends State<MainScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              color: color,
-              size: AppConstants.iconSizeMedium,
-            ),
+            Icon(icon, color: color, size: AppConstants.iconSizeMedium),
             const SizedBox(height: 4),
             Text(
               label,
@@ -402,8 +313,7 @@ class _MainScreenState extends State<MainScreen> {
               builder: (context) => const CreateEventScreen(),
             ),
           );
-          
-          // Show success message if event was created
+
           if (result == true && mounted) {
             _showTopNotification('Sự kiện đã được tạo thành công!');
           }
@@ -418,16 +328,14 @@ class _MainScreenState extends State<MainScreen> {
 
   void _showTopNotification(String message) {
     late OverlayEntry overlayEntry;
-    
+
     overlayEntry = OverlayEntry(
       builder: (context) => _TopNotification(
         message: message,
-        onDismiss: () {
-          overlayEntry.remove();
-        },
+        onDismiss: () => overlayEntry.remove(),
       ),
     );
-    
+
     Overlay.of(context).insert(overlayEntry);
   }
 }
@@ -467,18 +375,13 @@ class _TopNotificationState extends State<_TopNotification>
 
     _controller.forward();
 
-    // Auto dismiss after 3 seconds
     Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        _dismiss();
-      }
+      if (mounted) _dismiss();
     });
   }
 
   void _dismiss() {
-    _controller.reverse().then((_) {
-      widget.onDismiss();
-    });
+    _controller.reverse().then((_) => widget.onDismiss());
   }
 
   @override
@@ -499,14 +402,13 @@ class _TopNotificationState extends State<_TopNotification>
           child: GestureDetector(
             onTap: _dismiss,
             onVerticalDragEnd: (details) {
-              if (details.velocity.pixelsPerSecond.dy < 0) {
-                _dismiss();
-              }
+              if (details.velocity.pixelsPerSecond.dy < 0) _dismiss();
             },
             child: Center(
               child: Container(
                 margin: const EdgeInsets.symmetric(horizontal: 24),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
                   color: const Color(0xFF4CAF50),
                   borderRadius: BorderRadius.circular(12),
@@ -521,11 +423,8 @@ class _TopNotificationState extends State<_TopNotification>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      Icons.check_circle,
-                      color: Colors.white,
-                      size: 22,
-                    ),
+                    const Icon(Icons.check_circle,
+                        color: Colors.white, size: 22),
                     const SizedBox(width: 10),
                     Text(
                       widget.message,
