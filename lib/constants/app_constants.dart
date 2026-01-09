@@ -148,4 +148,21 @@ class AppConstants {
   
   static const String appName = 'Smart Meet';
   static const String appTagline = 'Tự động tìm lịch thông minh';
+
+  // ============ Event Options ============
+  
+  static const List<String> durationOptions = [
+    '30 phút',
+    '1 giờ',
+    '1.5 giờ',
+    '2 giờ',
+    '3 giờ',
+  ];
+
+  static const List<String> priorityOptions = [
+    'Không ưu tiên',
+    'Sáng',
+    'Chiều',
+    'Tối',
+  ];
 }
