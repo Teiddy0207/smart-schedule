@@ -1,11 +1,70 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../constants/app_constants.dart';
+import '../../services/booking_service.dart';
 import '../login/login_screen.dart';
 
-class ProfileScreenContent extends StatelessWidget {
+class ProfileScreenContent extends StatefulWidget {
   const ProfileScreenContent({super.key});
+
+  @override
+  State<ProfileScreenContent> createState() => _ProfileScreenContentState();
+}
+
+class _ProfileScreenContentState extends State<ProfileScreenContent> {
+  String? _bookingUrl;
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPersonalUrl();
+  }
+
+  Future<void> _loadPersonalUrl() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+
+      final response = await BookingService.getPersonalUrl();
+      
+      if (response['status'] == 200 && response['data'] != null) {
+        setState(() {
+          _bookingUrl = response['data']['url'] as String?;
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _errorMessage = response['message'] ?? 'Không thể tải URL đặt lịch';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Lỗi khi tải URL đặt lịch: ${e.toString()}';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _copyUrl() async {
+    if (_bookingUrl != null) {
+      await Clipboard.setData(ClipboardData(text: _bookingUrl!));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đã sao chép URL vào clipboard'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,9 +147,7 @@ class ProfileScreenContent extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      _buildInfoRow('Ngày sinh', '17/06/2004'),
-                      const SizedBox(height: 12),
-                      _buildInfoRow('Số điện thoại', '0977038592'),
+                      _buildBookingUrlRow(),
                       const SizedBox(height: 24),
                       SizedBox(
                         width: double.infinity,
@@ -354,30 +411,106 @@ class ProfileScreenContent extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
+  Widget _buildBookingUrlRow() {
+    if (_isLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(16.0),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.red[50],
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.error_outline, color: Colors.red[700]),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                _errorMessage!,
+                style: TextStyle(
+                  color: Colors.red[700],
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _loadPersonalUrl,
+              color: Colors.red[700],
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_bookingUrl == null || _bookingUrl!.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Text(
+          'Không có URL đặt lịch',
+          style: TextStyle(
             fontSize: 16,
-            color: Colors.black87,
+            color: Colors.grey,
           ),
         ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'URL đặt lịch',
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.black87,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: const Color(0xFFE3F2FD),
             borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            value,
-            style: const TextStyle(
-              fontSize: 16,
-              color: Color(0xFF2196F3),
-              fontWeight: FontWeight.w500,
+            border: Border.all(
+              color: const Color(0xFF2196F3).withValues(alpha: 0.3),
             ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _bookingUrl!,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF2196F3),
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.copy, size: 20),
+                onPressed: _copyUrl,
+                color: const Color(0xFF2196F3),
+                tooltip: 'Sao chép',
+              ),
+            ],
           ),
         ),
       ],
