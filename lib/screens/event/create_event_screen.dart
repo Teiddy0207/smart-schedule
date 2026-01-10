@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/meeting_service.dart';
 import '../../widgets/user_search_widget.dart';
 import '../../services/user_search_service.dart';
+import '../../constants/app_constants.dart';
 import 'suggested_slots_screen.dart';
 
 class CreateEventScreen extends StatefulWidget {
@@ -28,25 +29,10 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   TimeOfDay _manualEndTime = const TimeOfDay(hour: 10, minute: 0);
 
   // Primary color - đồng bộ với app
-  static const _primaryColor = Color(0xFF6C63FF);
+  static const _primaryColor = AppConstants.primaryColor;
 
-  String _selectedDuration = '30 phút';
-  String _selectedPriority = 'Không ưu tiên';
-
-  final List<String> _durationOptions = [
-    '30 phút',
-    '1 giờ',
-    '1.5 giờ',
-    '2 giờ',
-    '3 giờ',
-  ];
-
-  final List<String> _priorityOptions = [
-    'Không ưu tiên',
-    'Sáng',
-    'Chiều',
-    'Tối',
-  ];
+  String _selectedDuration = AppConstants.durationOptions.first;
+  String _selectedPriority = AppConstants.priorityOptions.first;
 
   @override
   void dispose() {
@@ -61,7 +47,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppConstants.backgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -201,7 +187,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                   child: _buildDropdownField(
                     label: 'Thời lượng',
                     value: _selectedDuration,
-                    items: _durationOptions,
+                    items: AppConstants.durationOptions,
                     icon: Icons.schedule,
                     onChanged: (value) {
                       setState(() => _selectedDuration = value!);
@@ -213,7 +199,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                   child: _buildDropdownField(
                     label: 'Ưu tiên',
                     value: _selectedPriority,
-                    items: _priorityOptions,
+                    items: AppConstants.priorityOptions,
                     icon: Icons.priority_high,
                     onChanged: (value) {
                       setState(() => _selectedPriority = value!);
@@ -379,7 +365,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                 ? Icon(prefixIcon, color: _primaryColor, size: 22)
                 : null,
             filled: true,
-            fillColor: const Color(0xFFF5F6F8),
+            fillColor: AppConstants.inputBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
@@ -432,7 +418,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFFF5F6F8),
+            color: AppConstants.inputBackground,
             borderRadius: BorderRadius.circular(12),
           ),
           child: DropdownButtonFormField<String>(
