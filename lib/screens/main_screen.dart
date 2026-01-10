@@ -244,14 +244,6 @@ class _MainScreenState extends State<MainScreen> {
                       CircleAvatar(
                         backgroundColor: Colors.white24,
                         child: IconButton(
-                          icon: const Icon(Icons.search, color: Colors.white),
-                          onPressed: () {},
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      CircleAvatar(
-                        backgroundColor: Colors.white24,
-                        child: IconButton(
                           icon: const Icon(Icons.add, color: Colors.white),
                           onPressed: () {
                             Navigator.push(
