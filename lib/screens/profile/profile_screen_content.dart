@@ -293,19 +293,6 @@ class _ProfileScreenContentState extends State<ProfileScreenContent> {
                       ],
                     ),
                   ),
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.edit,
-                      color: AppConstants.gradientEnd,
-                      size: 18,
-                    ),
-                  ),
                 ],
               ),
             ),
